@@ -589,6 +589,28 @@ body:has(.reels) {
   color: var(--white);
   background: #22324f;
   user-select: none;
+  -webkit-user-select: none;
+  /* iOS: sem o balão de "salvar imagem" no toque longo */
+  -webkit-touch-callout: none;
+}
+
+/* Segurando a foto: só o pet na tela (como no Instagram) */
+.reel-gradient,
+.reel-info,
+.reel-actions,
+.reels-top {
+  transition: opacity 0.2s ease;
+}
+
+.reel[data-holding] :is(.reel-gradient, .reel-info, .reel-actions),
+.reels:has(.reel[data-holding]) .reels-top {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A dica tem animação própria de opacidade, que venceria a regra acima */
+.reels:has(.reel[data-holding]) .reels-hint {
+  visibility: hidden;
 }
 
 .reel--empty {

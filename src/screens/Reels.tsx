@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Apple, ArrowLeft, ChevronUp, Footprints, Heart, HeartHandshake, PawPrint, Share2 } from 'lucide-react'
 import { SupportMenu, haptic, useImageLoaded } from '../components/ui'
 import { formatLikes, type Pet } from '../data/mock'
 import { formatAge } from '../lib/age'
 import { useApp } from '../state/AppState'
+
+/** Quanto tempo segurando a foto até esconder o texto. */
+const HOLD_MS = 220
 
 /** Direções dos coraçõezinhos que saltam do botão de curtir. */
 const SPARKS = [
@@ -91,6 +94,10 @@ function Reel({ pet, first }: { pet: Pet; first: boolean }) {
   const [burst, setBurst] = useState(0)
   const [sparks, setSparks] = useState(0)
   const lastTap = useRef(0)
+  const [holding, setHolding] = useState(false)
+  const hold = useRef<{ timer: number; x: number; y: number; fired: boolean } | null>(null)
+
+  useEffect(() => () => clearTimeout(hold.current?.timer), [])
 
   // Anima o conteúdo quando o reel entra na tela
   useEffect(() => {
@@ -109,7 +116,48 @@ function Reel({ pet, first }: { pet: Pet; first: boolean }) {
     toggleLike(pet.id)
   }
 
+  /**
+   * Segurar o dedo na foto esconde nome, detalhes e botões (como no Instagram) — soltar mostra de novo.
+   * Mexer o dedo antes do tempo é rolagem, não "segurar".
+   */
+  function onPointerDown(e: PointerEvent) {
+    if ((e.target as Element).closest('.reel-actions')) return
+    clearTimeout(hold.current?.timer)
+    hold.current = {
+      x: e.clientX,
+      y: e.clientY,
+      fired: false,
+      timer: window.setTimeout(() => {
+        if (!hold.current) return
+        hold.current.fired = true
+        setHolding(true)
+      }, HOLD_MS),
+    }
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    const h = hold.current
+    if (!h || h.fired) return
+    if (Math.hypot(e.clientX - h.x, e.clientY - h.y) > 10) {
+      clearTimeout(h.timer)
+      hold.current = null
+    }
+  }
+
+  function endHold() {
+    if (!hold.current) return
+    clearTimeout(hold.current.timer)
+    if (!hold.current.fired) hold.current = null
+    setHolding(false)
+  }
+
   function onTap() {
+    // O "click" que vem ao soltar depois de segurar não conta como toque (nem pro toque duplo)
+    if (hold.current?.fired) {
+      hold.current = null
+      lastTap.current = 0
+      return
+    }
     const now = Date.now()
     if (now - lastTap.current < 300) {
       if (!isLiked) like()
@@ -119,7 +167,21 @@ function Reel({ pet, first }: { pet: Pet; first: boolean }) {
   }
 
   return (
-    <article ref={ref} className="reel" data-pet={pet.id} data-active={active || undefined} onClick={onTap}>
+    <article
+      ref={ref}
+      className="reel"
+      data-pet={pet.id}
+      data-active={active || undefined}
+      data-holding={holding || undefined}
+      onClick={onTap}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endHold}
+      onPointerCancel={endHold}
+      onPointerLeave={endHold}
+      // Toque longo no celular abriria o menu de "salvar imagem" em cima do gesto
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <div className={`reel-bg ${loaded ? 'is-loaded' : ''}`} style={{ backgroundImage: pet.photo ? `url(${pet.photo})` : undefined }} />
       <div className="reel-gradient" />
 
