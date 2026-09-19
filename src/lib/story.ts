@@ -32,6 +32,10 @@ const BODY = '"Balsamiq Sans"'
 
 /** A mensagem do story: "{Nome}! Está pedindo para você ajudar o abrigo". */
 const ASK = 'Está pedindo para você ajudar o abrigo'
+/** Selo do topo de todos os modelos. */
+const BADGE = 'Doe para o abrigo'
+/** Deixa claro pra qual abrigo vai a doação. */
+const SHELTER_PLACE = `${SHELTER.name} · Ivaiporã - PR`
 
 type Ctx = CanvasRenderingContext2D
 
@@ -78,6 +82,7 @@ async function drawFoto(ctx: Ctx, pet: Pet, photo: HTMLImageElement | null, url:
   ctx.fillRect(0, 760, W, H - 760)
 
   shelterBadge(ctx, 262, WHITE)
+  placeTag(ctx, 404)
 
   // "{Nome}!" grande à mão — encolhe se não couber
   const left = 72
@@ -209,9 +214,15 @@ async function drawPolaroid(ctx: Ctx, pet: Pet, photo: HTMLImageElement | null, 
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.font = `700 40px ${BODY}`
-    ctx.fillText('Ajude', 0, -40)
-    ctx.fillText('o abrigo!', 0, 8)
-    heart(ctx, 0, 62, 44, { fill: WHITE })
+    // Selo com o nome e a cidade do abrigo
+    ctx.font = `700 22px ${BODY}`
+    withLetterSpacing(ctx, '4px', () => ctx.fillText('ABRIGO', 2, -56))
+    ctx.font = `700 40px ${BODY}`
+    ctx.fillText('Toca de', 0, -18)
+    ctx.fillText('Assis', 0, 22)
+    // Nessa altura o círculo tracejado só tem ~150px de largura
+    ctx.font = `700 ${fitFont(ctx, 'Ivaiporã - PR', BODY, '700', 22, 16, 144)}px ${BODY}`
+    ctx.fillText('Ivaiporã - PR', 0, 56)
     ctx.textAlign = 'left'
   })
 
@@ -304,7 +315,7 @@ async function drawCarteirinha(ctx: Ctx, pet: Pet, photo: HTMLImageElement | nul
     ctx.fillStyle = INK
     ctx.textBaseline = 'middle'
     ctx.font = `700 38px ${BODY}`
-    withLetterSpacing(ctx, '3px', () => ctx.fillText(SHELTER.name.toUpperCase(), x + 104, y + 60))
+    withLetterSpacing(ctx, '3px', () => ctx.fillText(BADGE.toUpperCase(), x + 104, y + 60))
     ctx.font = `700 32px ${BODY}`
     ctx.textAlign = 'right'
     ctx.fillText(`Nº ${cardNumber(pet.id)}`, x + cw - 40, y + 60)
@@ -376,7 +387,8 @@ async function drawCarteirinha(ctx: Ctx, pet: Pet, photo: HTMLImageElement | nul
     ctx.stroke()
     ctx.fillStyle = INK_SOFT
     ctx.font = `400 22px ${BODY}`
-    ctx.fillText('assinatura do abrigo', fx, fy + fh + 202)
+    ctx.font = `700 24px ${BODY}`
+    ctx.fillText(SHELTER_PLACE, fx, fy + fh + 204, 540)
 
     // Carimbo por cima da parte de baixo da foto
     stamp(ctx, fx + fw / 2 + 6, fy + fh - 86, -12)
@@ -404,8 +416,25 @@ async function drawCarteirinha(ctx: Ctx, pet: Pet, photo: HTMLImageElement | nul
 // Peças reaproveitadas
 // =====================================================================
 
+/** Etiqueta "📍 Abrigo Toca de Assis · Ivaiporã - PR" sobre fundo escuro (legível em qualquer foto). */
+function placeTag(ctx: Ctx, cy: number) {
+  const text = `📍 ${SHELTER_PLACE}`
+  ctx.font = `700 34px ${BODY}`
+  const w = ctx.measureText(text).width + 48
+  const h = 60
+  ctx.beginPath()
+  ctx.roundRect((W - w) / 2, cy - h / 2, w, h, h / 2)
+  ctx.fillStyle = 'rgba(26,43,74,0.72)'
+  ctx.fill()
+  ctx.fillStyle = WHITE
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, W / 2, cy + 2)
+  ctx.textAlign = 'left'
+}
+
 function shelterBadge(ctx: Ctx, y: number, fill: string) {
-  const text = SHELTER.name
+  const text = BADGE
   ctx.font = `700 40px ${BODY}`
   const padX = 34
   const icon = 44
