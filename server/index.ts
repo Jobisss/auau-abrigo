@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { extname, join, normalize, sep } from 'node:path'
 import { Elysia, t } from 'elysia'
+import { parseAge, serializeAge } from '../src/lib/age.ts'
 import { SESSION_COOKIE, checkCredentials, endSession, guardLogin, isAdmin, requireAdmin, startSession } from './auth.ts'
 import { DIST_DIR, IS_PROD, PORT, TRUST_PROXY } from './config.ts'
 import { PET_STATUSES, db, getPet, newPetId, seedIfEmpty, toAdminPet, toPublicPet, type PetRow } from './db.ts'
@@ -42,7 +43,9 @@ const api = new Elysia({ prefix: '/api' })
     '/pets',
     async ({ body, set }) => {
       const name = required(body.name, 'Nome')
-      const age = required(body.age, 'Idade')
+      const parsedAge = parseAge(body.age)
+      if (!parsedAge) throw new HttpError(400, 'Idade: use 2 para anos ou 0.6 para 6 meses')
+      const age = serializeAge(parsedAge)
       const contact = required(body.contact, 'Contato')
       const digits = contact.replace(/\D/g, '').length
       if (digits < 10 || digits > 11) throw new HttpError(400, 'Contato: número inválido')

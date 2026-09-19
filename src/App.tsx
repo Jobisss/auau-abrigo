@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { AppStateProvider } from './state/AppState'
+import { useEffect, useRef } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { api } from './lib/api'
+import { AppStateProvider, useApp } from './state/AppState'
 import HowItWorks from './screens/HowItWorks'
 import AddPet from './screens/AddPet'
 import Donation from './screens/Donation'
@@ -30,6 +31,7 @@ export default function App() {
     <AppStateProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <ResumeFlow />
         <Routes>
           <Route path="/" element={<HowItWorks />} />
           <Route path="/adicionar" element={<AddPet />} />
@@ -46,6 +48,39 @@ export default function App() {
       </BrowserRouter>
     </AppStateProvider>
   )
+}
+
+/**
+ * Quem sai no meio do fluxo (foi pagar no app do banco, abriu o WhatsApp…) e reabre o app
+ * volta de onde parou: pro PIX se ainda não enviou o comprovante, pra tela de espera se já.
+ * Só age na primeira tela carregada e só se for a inicial — navegar dentro do app não redireciona.
+ */
+function ResumeFlow() {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const { draftPet, draftStep, clearDraft } = useApp()
+  const checked = useRef(false)
+
+  useEffect(() => {
+    if (checked.current) return
+    checked.current = true
+    if (pathname !== '/' || !draftPet) return
+
+    if (draftStep === 'pix') {
+      navigate('/doacao', { replace: true })
+      return
+    }
+    // Já enviou: se o abrigo aprovou, mostra o pet no feed e encerra o fluxo; senão, tela de espera
+    api.pets
+      .get(draftPet.id)
+      .then(() => {
+        clearDraft()
+        navigate(`/reels?pet=${encodeURIComponent(draftPet.id)}`, { replace: true })
+      })
+      .catch(() => navigate('/obrigado', { replace: true }))
+  }, [pathname, draftPet, draftStep, clearDraft, navigate])
+
+  return null
 }
 
 function ScrollToTop() {

@@ -1,5 +1,3 @@
-import { PIX_KEY_DISPLAY } from '../lib/pix'
-
 export type PetStatus = 'pendente' | 'ativo' | 'oculto'
 
 /** Pet como a API pública devolve (sem telefone do tutor nem valor doado). */
@@ -34,7 +32,6 @@ export const SHELTER = {
   instagramUrl: 'https://www.instagram.com/abrigotocadeassisivaipora/',
   whatsapp: '43998664156',
   whatsappIntl: '5543998664156',
-  pixKey: PIX_KEY_DISPLAY,
   stats: [
     { value: 'ONG', label: 'Protecao animal' },
     { value: '1000+', label: 'Seguidores' },

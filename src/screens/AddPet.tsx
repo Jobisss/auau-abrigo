@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type
 import { useNavigate } from 'react-router-dom'
 import { Apple, Camera, CircleAlert, Footprints, HeartHandshake, ImagePlus, Phone, RefreshCw, Send } from 'lucide-react'
 import { PawPattern, ScreenHeader, haptic } from '../components/ui'
+import { formatAge, parseAge, serializeAge } from '../lib/age'
 import { resizeImage } from '../lib/image'
 import { useApp } from '../state/AppState'
 
@@ -47,10 +48,12 @@ export default function AddPet() {
   const errors = {
     photo: !photo && 'Adicione uma foto do seu pet',
     name: !form.name.trim() && 'Obrigatorio',
-    age: !form.age.trim() && 'Obrigatorio',
+    age: (!form.age.trim() && 'Obrigatorio') || (!parseAge(form.age) && 'Use 2 ou 0.6'),
     contact: form.contact.replace(/\D/g, '').length < 10 && 'Numero invalido',
   }
   const touched = attempt > 0
+  const parsedAge = parseAge(form.age)
+  const agePreview = parsedAge ? formatAge(serializeAge(parsedAge)) : null
 
   useEffect(() => {
     if (!photoFile) return
@@ -97,7 +100,7 @@ export default function AddPet() {
       await addPet(
         {
           name: form.name.trim(),
-          age: form.age.replace(/\D/g, '') || form.age.trim(),
+          age: serializeAge(parsedAge!),
           exoticFood: form.exoticFood.trim(),
           adoptedHow: form.adoptedHow.trim(),
           favoritePlay: form.favoritePlay.trim(),
@@ -198,18 +201,33 @@ export default function AddPet() {
               aria-invalid={invalid('name')}
             />
           </Field>
-          <Field label="Idade" style={{ width: 120 }} error={err('age')}>
+          <Field label="Idade (anos)" style={{ width: 120 }} error={err('age')}>
             <input
               ref={ageRef}
               className="input"
-              placeholder="5 anos"
+              placeholder="2 ou 0.6"
+              inputMode="decimal"
               value={form.age}
               onChange={set('age')}
-              maxLength={10}
+              maxLength={5}
               aria-invalid={invalid('age')}
+              aria-describedby="age-hint"
             />
           </Field>
         </div>
+        {/* Deixa explícito que o número depois do ponto são meses — e mostra como vai ficar */}
+        <p id="age-hint" className="age-hint" aria-live="polite">
+          {agePreview ? (
+            <>
+              Vai aparecer como: <strong>{agePreview}</strong>
+            </>
+          ) : (
+            <>
+              Filhote? Depois do ponto sao os <strong>meses</strong>: <strong>0.6</strong> = 6 meses ·{' '}
+              <strong>1.3</strong> = 1 ano e 3 meses
+            </>
+          )}
+        </p>
 
         <Field label="Comida exotica favorita" icon={<Apple size={16} />}>
           <input className="input" placeholder="Manga congelada" value={form.exoticFood} onChange={set('exoticFood')} />

@@ -69,7 +69,7 @@ bun run start   # produção: um processo só serve o front e a API
 
 | Variável | Pra que serve |
 | --- | --- |
-| `VITE_PIX_KEY` | Chave PIX **do abrigo** (telefone `+55DDDNUMERO`, e-mail, CPF/CNPJ ou aleatória). **Vazia** = o app esconde o QR e orienta a doar pelo WhatsApp |
+| `VITE_PIX_KEY` | Chave PIX **do abrigo** (telefone, e-mail, CPF/CNPJ ou aleatória). Pode ter pontuação: o app converte pro formato que o banco aceita (CPF/CNPJ só números, telefone `+55…`). **Vazia** = o app esconde o QR e orienta a doar pelo WhatsApp |
 | `VITE_PIX_MERCHANT_NAME` | Nome do recebedor no PIX (até 25 caracteres, sem acento) |
 | `VITE_PIX_MERCHANT_CITY` | Cidade do recebedor (até 15 caracteres, sem acento) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Login do painel do abrigo (senha com 8+ caracteres). **Vazio** = painel fechado |
@@ -135,10 +135,10 @@ Exemplos prontos: [`deploy/nginx.conf`](deploy/nginx.conf) · [`deploy/Caddyfile
 > [!IMPORTANT]
 > A porta fica **só** no `.env` (`PORT`). Não coloque `PORT` no `ecosystem.config.cjs`: o que o PM2 passa tem prioridade sobre o `.env`.
 
-**Atualizar:**
+**Atualizar** — [`deploy/deploy.sh`](deploy/deploy.sh) faz `git pull` → `bun install` → `bun run build` → `pm2 restart` (ou `pm2 start` na primeira vez). Se o build falhar, ele para antes de reiniciar e a versão no ar continua rodando.
 
 ```bash
-git pull && bun install && bun run build && pm2 reload auau-abrigo
+./deploy/deploy.sh
 ```
 
 **Backup** — [`deploy/backup.sh`](deploy/backup.sh) copia o banco (com o app rodando) + as fotos e guarda os últimos 14. No `crontab -e`:
@@ -174,6 +174,7 @@ Em produção os pets de exemplo **não** são criados, e `data/` nunca é tocad
 deploy/
 ├── nginx.conf            # exemplo de proxy reverso (Nginx)
 ├── Caddyfile             # exemplo de proxy reverso (Caddy)
+├── deploy.sh             # pull + build + pm2 restart
 └── backup.sh             # backup diário de data/ (cron)
 ecosystem.config.cjs      # PM2 na VPS
 server/
@@ -192,6 +193,7 @@ src/
 ├── data/mock.ts          # dados do abrigo e tipos
 ├── lib/api.ts            # cliente da API
 ├── lib/image.ts          # reduz a foto antes do upload
+├── lib/age.ts            # idade "anos.meses" (0.6 = 6 meses) — usado também pelo server
 ├── lib/pix.ts            # geração do PIX (BR Code + QR)
 ├── state/AppState.tsx    # estado global (feed, pet recém-cadastrado, sessão do painel)
 └── screens/

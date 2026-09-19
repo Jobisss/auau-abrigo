@@ -179,6 +179,18 @@
   font-size: 11px;
 }
 
+/* Dica da idade: cola na linha Nome/Idade (o form tem gap de 18px) */
+.age-hint {
+  margin-top: -10px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.age-hint strong {
+  color: var(--ink);
+}
+
 .photo-change {
   position: absolute;
   right: 12px;
@@ -491,21 +503,6 @@
 .stat span {
   font-size: 12px;
   color: var(--ink-soft);
-}
-
-.pix-info {
-  cursor: copy;
-}
-
-.pix-info .big-link svg {
-  transition:
-    scale var(--t-med) var(--ease-spring),
-    rotate var(--t-med) var(--ease-spring);
-}
-
-.pix-info:hover .big-link svg {
-  scale: 1.15;
-  rotate: -8deg;
 }
 
 /* ============ Reels ============ */

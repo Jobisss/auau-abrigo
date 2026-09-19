@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ExternalLink, MessageCircle } from 'lucide-react'
 import { SHELTER, formatBRL, waLink } from '../data/mock'
+import { formatAge } from '../lib/age'
 import { useApp } from '../state/AppState'
 
 export default function SendReceipt() {
@@ -13,7 +14,7 @@ export default function SendReceipt() {
   const message = [
     'Oi! Segue o comprovante da doacao pro abrigo',
     donation ? `(${formatBRL(donation)})` : '',
-    draftPet ? `— pet: ${draftPet.name}, ${draftPet.age}` : '',
+    draftPet ? `— pet: ${draftPet.name}, ${formatAge(draftPet.age)}` : '',
   ]
     .filter(Boolean)
     .join(' ')

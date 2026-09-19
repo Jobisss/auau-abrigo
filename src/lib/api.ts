@@ -43,6 +43,9 @@ export const api = {
   pets: {
     list: () => request<Pet[]>('/pets'),
 
+    /** Só responde pra pets aprovados (404 enquanto pendente/oculto). */
+    get: (id: string) => request<Pet>(`/pets/${encodeURIComponent(id)}`),
+
     create(fields: NewPetFields, photo: Blob) {
       const form = new FormData()
       for (const [k, v] of Object.entries(fields)) form.append(k, v)

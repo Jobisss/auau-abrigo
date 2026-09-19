@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LifeBuoy, Play } from 'lucide-react'
 import { Confetti } from '../components/ui'
@@ -6,8 +7,11 @@ import { useApp } from '../state/AppState'
 
 export default function Thanks() {
   const navigate = useNavigate()
-  const { draftPet } = useApp()
+  const { draftPet, markSent } = useApp()
   const name = draftPet?.name ?? 'seu pet'
+
+  // Daqui em diante, quem reabrir o app cai nesta tela (e não mais no PIX)
+  useEffect(markSent, [markSent])
 
   return (
     <main className="screen cascade" style={{ gap: 20, paddingTop: 40 }}>

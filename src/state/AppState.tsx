@@ -10,10 +10,19 @@ import { api, type NewPetFields } from '../lib/api'
 
 export type FeedStatus = 'loading' | 'ready' | 'error'
 
+/**
+ * Até onde a pessoa chegou com o pet recém-cadastrado:
+ *   pix     → cadastrou, falta pagar/enviar o comprovante (volta pra tela do PIX)
+ *   enviado → passou do "Já enviei" (volta pra tela de espera)
+ */
+export type DraftStep = 'pix' | 'enviado'
+
 interface Draft {
   pet: Pet
   /** Prova pra API que este aparelho cadastrou o pet (usado pra informar o valor doado). */
   token: string
+  /** Ausente em dados salvos antes desse campo existir — vale como 'pix'. */
+  step?: DraftStep
 }
 
 interface AppState {
@@ -23,6 +32,11 @@ interface AppState {
   reloadFeed: () => void
   /** Pet que o usuário acabou de cadastrar (fluxo doação → obrigado). */
   draftPet: Pet | null
+  draftStep: DraftStep | null
+  /** Chamado ao chegar na tela "obrigado": a pessoa disse que enviou o comprovante. */
+  markSent: () => void
+  /** Esquece o pet recém-cadastrado (ex.: já foi aprovado). */
+  clearDraft: () => void
   donation: number | null
   liked: string[]
   /** null enquanto confere a sessão com o servidor. */
@@ -91,9 +105,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const addPet = useCallback(async (fields: NewPetFields, photo: Blob) => {
     const { pet, editToken } = await api.pets.create(fields, photo)
-    setDraft({ pet, token: editToken })
+    setDraft({ pet, token: editToken, step: 'pix' })
     setDonationState(null)
     return pet
+  }, [])
+
+  const markSent = useCallback(() => setDraft((d) => (d && d.step !== 'enviado' ? { ...d, step: 'enviado' } : d)), [])
+
+  const clearDraft = useCallback(() => {
+    setDraft(null)
+    setDonationState(null)
   }, [])
 
   const setDonation = useCallback(
@@ -138,6 +159,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     feedStatus,
     reloadFeed,
     draftPet: draft?.pet ?? null,
+    draftStep: draft ? (draft.step ?? 'pix') : null,
+    markSent,
+    clearDraft,
     donation,
     liked,
     isAdmin,

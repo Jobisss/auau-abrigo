@@ -1,10 +1,9 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Copy, HandHeart, MapPin } from 'lucide-react'
+import { ArrowLeft, HandHeart, MapPin } from 'lucide-react'
 import hero from '../assets/abrigo-hero.jpg'
-import { CountUp, InstagramIcon, ScreenHeader, haptic, useToast } from '../components/ui'
+import { CountUp, InstagramIcon, ScreenHeader } from '../components/ui'
 import { SHELTER } from '../data/mock'
-import { PIX_ENABLED, PIX_KEY } from '../lib/pix'
 
 /** "320+" anima de 0 a 320; valores como "24/7" ficam estáticos. */
 function StatValue({ value }: { value: string }) {
@@ -20,25 +19,6 @@ function StatValue({ value }: { value: string }) {
 
 export default function Shelter() {
   const navigate = useNavigate()
-  const [toast, showToast] = useToast()
-  const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!copied) return
-    const t = setTimeout(() => setCopied(false), 2500)
-    return () => clearTimeout(t)
-  }, [copied])
-
-  async function copyKey() {
-    try {
-      await navigator.clipboard.writeText(PIX_KEY)
-    } catch {
-      /* ignora */
-    }
-    haptic()
-    setCopied(true)
-    showToast({ message: 'Chave PIX copiada!', tone: 'success' })
-  }
 
   return (
     <main className="screen cascade">
@@ -74,21 +54,6 @@ export default function Shelter() {
         ))}
       </div>
 
-      {PIX_ENABLED && (
-      <button className="card card--md card--yellow card--interactive pix-info" onClick={copyKey} aria-label="Copiar chave PIX">
-        <span className="h3" style={{ fontSize: 14 }}>
-          Doacao 100% direto pro abrigo
-        </span>
-        <span className="big-link row" style={{ '--gap': '8px' } as CSSProperties}>
-          {SHELTER.pixKey}
-          {copied ? <Check key="ok" size={20} strokeWidth={3} className="pop" /> : <Copy key="copy" size={18} strokeWidth={2.5} />}
-        </span>
-        <span className="card-body" style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-          {copied ? 'Copiada! Agora e so colar no app do banco.' : 'Chave PIX — toque para copiar e envie apos publicar seu pet.'}
-        </span>
-      </button>
-      )}
-
       <section className="card card--md card--teal">
         <h2 className="card-title">
           <HandHeart size={18} strokeWidth={2.2} />
@@ -108,7 +73,6 @@ export default function Shelter() {
         <ArrowLeft size={20} strokeWidth={2.5} />
         Voltar ao passo a passo
       </button>
-      {toast}
     </main>
   )
 }

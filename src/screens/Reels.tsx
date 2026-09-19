@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Apple, ArrowLeft, ChevronUp, Footprints, Heart, HeartHandshake, PawPrint, Share2 } from 'lucide-react'
 import { SupportMenu, haptic, useImageLoaded } from '../components/ui'
 import { formatLikes, type Pet } from '../data/mock'
+import { formatAge } from '../lib/age'
 import { useApp } from '../state/AppState'
 
 /** Direções dos coraçõezinhos que saltam do botão de curtir. */
@@ -126,7 +127,7 @@ function Reel({ pet, first }: { pet: Pet; first: boolean }) {
 
       <div className="reel-info">
         <h2 className="reel-name">
-          {pet.name}, {pet.age}
+          {pet.name}, {formatAge(pet.age)}
         </h2>
         <dl className="reel-details">
           <Detail icon={<Apple size={18} />} label="Comida exótica favorita:" value={pet.exoticFood} />

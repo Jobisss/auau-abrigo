@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { LogOut, MessageCircle, PawPrint } from 'lucide-react'
 import { ConfirmDialog, CountUp, useToast } from '../../components/ui'
 import { formatBRL, type AdminPet as Pet, type PetStatus } from '../../data/mock'
+import { formatAge } from '../../lib/age'
 import { ApiError, api } from '../../lib/api'
 import { useApp } from '../../state/AppState'
 
@@ -213,7 +214,7 @@ export default function AdminDashboard() {
               <div className="admin-photo" style={{ backgroundImage: p.photo ? `url(${p.photo})` : undefined }} />
               <div className="stack grow" style={{ '--gap': '4px' } as CSSProperties}>
                 <strong>
-                  {p.name}, {p.age}
+                  {p.name}, {formatAge(p.age)}
                 </strong>
                 <span className="admin-phone">{p.contact}</span>
                 <span className="admin-value">Doacao: {formatBRL(p.donation)}</span>
@@ -241,7 +242,7 @@ export default function AdminDashboard() {
                   {!p.photo && <PawPrint size={16} />}
                 </span>
                 <strong>
-                  {p.name}, {p.age}
+                  {p.name}, {formatAge(p.age)}
                 </strong>
               </span>
               <span className="admin-phone">{p.contact}</span>
