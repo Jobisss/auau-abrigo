@@ -55,7 +55,7 @@ export default function Reels() {
         ) : feed.length === 0 && feedStatus === 'error' ? (
           <div className="reel reel--empty">
             <PawPrint size={48} />
-            <p>Nao deu pra carregar o feed.</p>
+            <p>Não deu pra carregar o feed.</p>
             <button className="btn btn--yellow" style={{ width: 'auto' }} onClick={reloadFeed}>
               Tentar de novo
             </button>

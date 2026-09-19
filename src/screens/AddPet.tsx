@@ -47,9 +47,9 @@ export default function AddPet() {
 
   const errors = {
     photo: !photo && 'Adicione uma foto do seu pet',
-    name: !form.name.trim() && 'Obrigatorio',
-    age: (!form.age.trim() && 'Obrigatorio') || (!parseAge(form.age) && 'Use 2 ou 0.6'),
-    contact: form.contact.replace(/\D/g, '').length < 10 && 'Numero invalido',
+    name: !form.name.trim() && 'Obrigatório',
+    age: (!form.age.trim() && 'Obrigatório') || (!parseAge(form.age) && 'Use 2 ou 0.6'),
+    contact: form.contact.replace(/\D/g, '').length < 10 && 'Número inválido',
   }
   const touched = attempt > 0
   const parsedAge = parseAge(form.age)
@@ -223,13 +223,13 @@ export default function AddPet() {
             </>
           ) : (
             <>
-              Filhote? Depois do ponto sao os <strong>meses</strong>: <strong>0.6</strong> = 6 meses ·{' '}
+              Filhote? Depois do ponto são os <strong>meses</strong>: <strong>0.6</strong> = 6 meses ·{' '}
               <strong>1.3</strong> = 1 ano e 3 meses
             </>
           )}
         </p>
 
-        <Field label="Comida exotica favorita" icon={<Apple size={16} />}>
+        <Field label="Comida exótica favorita" icon={<Apple size={16} />}>
           <input className="input" placeholder="Manga congelada" value={form.exoticFood} onChange={set('exoticFood')} />
         </Field>
         <Field label="Como foi adotado" icon={<HeartHandshake size={16} />}>
@@ -238,7 +238,7 @@ export default function AddPet() {
         <Field label="Brincadeira favorita" icon={<Footprints size={16} />}>
           <input className="input" placeholder="Perseguir bolhas" value={form.favoritePlay} onChange={set('favoritePlay')} />
         </Field>
-        <Field label="O seu numero para contato" icon={<Phone size={16} />} error={err('contact')}>
+        <Field label="O seu número para contato" icon={<Phone size={16} />} error={err('contact')}>
           <input
             ref={contactRef}
             className="input"

@@ -33,7 +33,7 @@ export const PIX_KEY = normalizePixKey(import.meta.env.VITE_PIX_KEY ?? '')
 /** Sem chave no .env o app esconde QR/copia-e-cola e orienta a doar pelo WhatsApp. */
 export const PIX_ENABLED = PIX_KEY.length > 0
 const MERCHANT_NAME = plain(import.meta.env.VITE_PIX_MERCHANT_NAME || 'Abrigo Toca de Assis', 25)
-const MERCHANT_CITY = plain(import.meta.env.VITE_PIX_MERCHANT_CITY || 'Ivaipora', 15)
+const MERCHANT_CITY = plain(import.meta.env.VITE_PIX_MERCHANT_CITY || 'Ivaiporã', 15)
 
 export interface PixCharge {
   brCode: string
@@ -41,7 +41,7 @@ export interface PixCharge {
 }
 
 /** Gera o PIX copia-e-cola (BR Code) e o QR Code em base64 para o valor informado. */
-export async function createPixCharge(amount: number, info = 'Doacao pro abrigo'): Promise<PixCharge> {
+export async function createPixCharge(amount: number, info = 'Doação pro abrigo'): Promise<PixCharge> {
   if (!PIX_KEY) throw new Error('VITE_PIX_KEY não configurada no .env')
 
   const pix = createStaticPix({

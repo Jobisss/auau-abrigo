@@ -22,9 +22,9 @@ export default function Shelter() {
 
   return (
     <main className="screen cascade">
-      <ScreenHeader title="Conheca o abrigo" back="/" />
+      <ScreenHeader title="Conheça o abrigo" back="/" />
 
-      <div className="hero-img" role="img" aria-label="Voluntarios cuidando de um bichinho no abrigo">
+      <div className="hero-img" role="img" aria-label="Voluntários cuidando de um bichinho no abrigo">
         <div style={{ backgroundImage: `url(${hero})` }} />
       </div>
 
@@ -37,7 +37,7 @@ export default function Shelter() {
       </div>
 
       <section className="card card--lg" style={{ gap: 12 }}>
-        <h2 className="h2">Nossa missao</h2>
+        <h2 className="h2">Nossa missão</h2>
         <p className="card-body" style={{ fontSize: 15, lineHeight: '22px' }}>
           {SHELTER.mission}
         </p>
@@ -60,7 +60,7 @@ export default function Shelter() {
           Outras formas de ajudar
         </h2>
         <p className="card-body" style={{ color: 'var(--ink)' }}>
-          O abrigo tambem recebe racao e produtos de limpeza, com pontos de coleta em mercados e pet shops de Ivaipora.
+          O abrigo também recebe ração e produtos de limpeza, com pontos de coleta em mercados e pet shops de Ivaiporã.
         </p>
       </section>
 

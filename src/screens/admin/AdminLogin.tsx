@@ -45,7 +45,7 @@ export default function AdminLogin() {
           Painel do abrigo
         </h1>
         <p className="muted" style={{ textAlign: 'center', lineHeight: '21px' }}>
-          Entre para gerenciar aprovacoes e doacoes
+          Entre para gerenciar aprovações e doações
         </p>
 
         <div className="stack" style={{ '--gap': '14px' } as CSSProperties}>

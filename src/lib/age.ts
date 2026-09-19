@@ -30,7 +30,7 @@ export function formatAge(value: string) {
   const age = parseAge(value)
   if (!age) return value
   const y = age.years === 1 ? '1 ano' : `${age.years} anos`
-  const m = age.months === 1 ? '1 mes' : `${age.months} meses`
+  const m = age.months === 1 ? '1 mês' : `${age.months} meses`
   if (!age.months) return y
   if (!age.years) return m
   return `${y} e ${m}`

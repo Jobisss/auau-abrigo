@@ -8,7 +8,7 @@ import { ApiError, api } from '../../lib/api'
 import { useApp } from '../../state/AppState'
 
 const FILTERS: { value: PetStatus; mobile: string; desktop: string }[] = [
-  { value: 'pendente', mobile: 'Pendentes', desktop: 'Para aprovacao' },
+  { value: 'pendente', mobile: 'Pendentes', desktop: 'Para aprovação' },
   { value: 'ativo', mobile: 'Ativos', desktop: 'Ativos' },
   { value: 'oculto', mobile: 'Ocultos', desktop: 'Ocultos' },
 ]
@@ -16,7 +16,7 @@ const FILTERS: { value: PetStatus; mobile: string; desktop: string }[] = [
 const STATUS_LABEL: Record<PetStatus, string> = { pendente: 'Pendente', ativo: 'Ativo', oculto: 'Oculto' }
 
 const EMPTY_TEXT: Record<PetStatus, string> = {
-  pendente: 'Tudo em dia! Nenhum pet esperando aprovacao.',
+  pendente: 'Tudo em dia! Nenhum pet esperando aprovação.',
   ativo: 'Nenhum pet ativo no Reels ainda.',
   oculto: 'Nenhum pet oculto.',
 }
@@ -137,8 +137,8 @@ export default function AdminDashboard() {
 
   const metrics = [
     { label: 'Valor total arrecadado', short: 'Arrecadado', value: raised, format: money, color: 'var(--blue)' },
-    { label: 'Total pendente de confirmacao', short: 'Pendente', value: pending, format: money, color: 'var(--orange)' },
-    { label: 'Para aprovacao', short: 'Para aprovar', value: count('pendente'), suffix: ' pets', color: 'var(--yellow)' },
+    { label: 'Total pendente de confirmação', short: 'Pendente', value: pending, format: money, color: 'var(--orange)' },
+    { label: 'Para aprovação', short: 'Para aprovar', value: count('pendente'), suffix: ' pets', color: 'var(--yellow)' },
     { label: 'Ativos no Reels', short: 'Ativos', value: count('ativo'), suffix: ' pets', color: 'var(--teal)' },
   ]
 
@@ -149,12 +149,12 @@ export default function AdminDashboard() {
       <header className="admin-header">
         <div>
           <h1 className="title-hand">
-            <span className="only-mobile">Aprovacao</span>
-            <span className="only-desktop">Painel de aprovacao</span>
+            <span className="only-mobile">Aprovação</span>
+            <span className="only-desktop">Painel de aprovação</span>
           </h1>
           <p className="muted">
-            <span className="only-mobile">Gerencie pets e doacoes</span>
-            <span className="only-desktop">Gerencie pets, doacoes e publicacoes no Reels</span>
+            <span className="only-mobile">Gerencie pets e doações</span>
+            <span className="only-desktop">Gerencie pets, doações e publicações no Reels</span>
           </p>
         </div>
         <button
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
                   {p.name}, {formatAge(p.age)}
                 </strong>
                 <span className="admin-phone">{p.contact}</span>
-                <span className="admin-value">Doacao: {formatBRL(p.donation)}</span>
+                <span className="admin-value">Doação: {formatBRL(p.donation)}</span>
               </div>
             </div>
             <ActionButtons pet={p} act={act} />
@@ -261,7 +261,7 @@ export default function AdminDashboard() {
       <ConfirmDialog
         open={confirming !== null}
         title={`Remover ${confirming?.name ?? ''}?`}
-        message="O pet sai do painel e do Reels. Essa acao nao pode ser desfeita."
+        message="O pet sai do painel e do Reels. Essa ação não pode ser desfeita."
         confirmLabel="Remover"
         onConfirm={confirmRemove}
         onCancel={closeConfirm}

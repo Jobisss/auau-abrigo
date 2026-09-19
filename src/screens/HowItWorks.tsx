@@ -11,7 +11,7 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { icon: LogIn, title: 'Voce entra', text: 'Entre no app e comece por aqui.' },
+  { icon: LogIn, title: 'Você entra', text: 'Entre no app e comece por aqui.' },
   { icon: Camera, title: 'Adiciona o pet', text: 'Preencha foto, nome, idade e curiosidades do seu bichinho.' },
   {
     icon: HeartHandshake,
@@ -21,7 +21,7 @@ const STEPS: Step[] = [
         Escolha R$ 5, R$ 10, R$ 25 ou outro. Todo valor vai 100% direto pro abrigo!
         <br />
         <Link to="/abrigo" className="link step-link">
-          Conheca o abrigo &gt;
+          Conheça o abrigo &gt;
         </Link>
       </>
     ),
@@ -33,8 +33,8 @@ const STEPS: Step[] = [
   },
   {
     icon: Timer,
-    title: 'Aguarda a aprovacao',
-    text: 'Seu pet ainda nao aparece no Reels na hora! Conferimos a doacao e liberamos em breve.',
+    title: 'Aguarda a aprovação',
+    text: 'Seu pet ainda não aparece no Reels na hora! Conferimos a doação e liberamos em breve.',
   },
 ]
 
@@ -51,7 +51,7 @@ export default function HowItWorks() {
         <SupportMenu />
       </header>
 
-      <p className="muted">Siga o passo a passo — apos a aprovacao, seu pet entra no Reels!</p>
+      <p className="muted">Siga o passo a passo — após a aprovação, seu pet entra no Reels!</p>
 
       <ol className="timeline cascade" style={{ '--base': 100 } as CSSProperties}>
         {STEPS.map(({ icon: Icon, title, text }, i) => (
@@ -74,10 +74,10 @@ export default function HowItWorks() {
       <section className="card card--md card--orange" style={after(0)}>
         <h2 className="card-title">
           <BadgeCheck size={18} strokeWidth={2.2} />
-          Sobre a aprovacao
+          Sobre a aprovação
         </h2>
         <p className="card-body">
-          Apos enviar o comprovante, nossa equipe confere a doacao. Se nao aparecer em ate 24h, fale conosco:{' '}
+          Após enviar o comprovante, nossa equipe confere a doação. Se não aparecer em até 24h, fale conosco:{' '}
           {SHELTER.whatsapp}
         </p>
       </section>

@@ -68,7 +68,7 @@ export default function Donation() {
 
   function generate() {
     const v = parseBRL(custom)
-    if (v < 1) return showToast({ message: 'Valor minimo: R$ 1,00', tone: 'error' })
+    if (v < 1) return showToast({ message: 'Valor mínimo: R$ 1,00', tone: 'error' })
     setGenerated(v)
     setDonation(v)
   }
@@ -82,34 +82,34 @@ export default function Donation() {
     }
     haptic()
     setCopied(true)
-    showToast({ message: 'Codigo PIX copiado! Cole no app do seu banco', tone: 'success' })
+    showToast({ message: 'Código PIX copiado! Cole no app do seu banco', tone: 'success' })
   }
 
   return (
     <main className="screen cascade">
       <h1 className="title-hand" style={{ marginTop: 16 }}>
-        Quase la, bichinho!
+        Quase lá, bichinho!
       </h1>
       <p className="muted" style={{ fontSize: 15 }}>
-        Falta so a doacao para liberar seu pet no Reels.
+        Falta só a doação para liberar seu pet no Reels.
       </p>
 
       <section className="card" style={{ padding: 14 }}>
         <h2 className="card-title" style={{ fontSize: 16 }}>
           <CircleAlert size={18} color="var(--orange)" strokeWidth={2.4} />
-          Seu pet ainda nao aparece no Reels!
+          Seu pet ainda não aparece no Reels!
         </h2>
         <p className="card-body">
-          Para aprovar seu pet, faca a doacao e envie o comprovante no WhatsApp. Liberamos seu bichinho!
+          Para aprovar seu pet, faça a doação e envie o comprovante no WhatsApp. Liberamos seu bichinho!
         </p>
       </section>
 
       <div className="row" style={{ '--gap': '10px' } as CSSProperties}>
         <span className="step-num">1</span>
-        <h2 className="h3">Escolha o valor da doacao pro abrigo</h2>
+        <h2 className="h3">Escolha o valor da doação pro abrigo</h2>
       </div>
 
-      <div className="row amount-row" role="radiogroup" aria-label="Valor da doacao">
+      <div className="row amount-row" role="radiogroup" aria-label="Valor da doação">
         {DONATION_PRESETS.map((v) => (
           <button
             key={v}
@@ -137,7 +137,7 @@ export default function Donation() {
         {choice === 'outro' && (
           <label className="field">
             <span className="h3" style={{ fontSize: 14 }}>
-              Digite o valor da doacao
+              Digite o valor da doação
             </span>
             <div className="input-prefix">
               <span>R$</span>
@@ -163,7 +163,7 @@ export default function Donation() {
             <QrCode size={28} strokeWidth={2} color="var(--ink-soft)" />
             <strong style={{ color: 'var(--ink)' }}>PIX do abrigo em breve</strong>
             <span>
-              Voce escolheu {formatBRL(amount)}. A chave PIX ainda nao esta no app — combine a doacao pelo WhatsApp
+              Você escolheu {formatBRL(amount)}. A chave PIX ainda não está no app — combine a doação pelo WhatsApp
               abaixo.
             </span>
           </div>
@@ -184,28 +184,28 @@ export default function Donation() {
               ) : null}
             </div>
             <span className="h3" style={{ fontSize: 14, color: 'var(--ink-soft)' }}>
-              Codigo PIX copia e cola · {formatBRL(amount)}
+              Código PIX copia e cola · {formatBRL(amount)}
             </span>
             <div
               className={['pix-code', !code && 'skeleton', copied && 'is-flash'].filter(Boolean).join(' ')}
               title={code ?? ''}
             >
-              {code ?? 'Gerando codigo PIX...'}
+              {code ?? 'Gerando código PIX...'}
             </div>
             <button className={`btn ${copied ? 'btn--success' : 'btn--yellow'}`} onClick={copy} disabled={!code}>
               {copied ? <Check key="ok" size={20} strokeWidth={3} /> : <Copy key="copy" size={20} strokeWidth={2.5} />}
-              {copied ? 'Copiado!' : 'Copiar codigo PIX'}
+              {copied ? 'Copiado!' : 'Copiar código PIX'}
             </button>
           </>
         ) : (
           <>
             <div className="pix-empty">
               <QrCode size={28} strokeWidth={2} color="var(--ink-soft)" />
-              <span>{PIX_ENABLED ? 'O QR Code e o codigo PIX aparecem aqui apos gerar.' : 'Digite o valor e confirme.'}</span>
+              <span>{PIX_ENABLED ? 'O QR Code e o código PIX aparecem aqui após gerar.' : 'Digite o valor e confirme.'}</span>
             </div>
             <button className="btn btn--blue" onClick={generate} disabled={!custom}>
               {PIX_ENABLED ? <QrCode size={20} strokeWidth={2.5} /> : <Check size={20} strokeWidth={2.5} />}
-              {PIX_ENABLED ? 'Gerar codigo PIX' : 'Confirmar valor'}
+              {PIX_ENABLED ? 'Gerar código PIX' : 'Confirmar valor'}
             </button>
           </>
         )}
@@ -228,7 +228,7 @@ export default function Donation() {
           wa.me/{SHELTER.whatsapp}
         </span>
         <span className="card-body" style={{ color: 'var(--ink-soft)' }}>
-          Numero: {SHELTER.whatsapp}
+          Número: {SHELTER.whatsapp}
         </span>
         <SupportNote />
       </section>

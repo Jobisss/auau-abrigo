@@ -12,7 +12,7 @@ export async function resizeImage(file: Blob): Promise<Blob> {
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
   } catch {
-    throw new Error('Nao consegui abrir essa foto — tente outra (JPG ou PNG)')
+    throw new Error('Não consegui abrir essa foto — tente outra (JPG ou PNG)')
   }
 
   const scale = Math.min(1, MAX_W / bitmap.width, MAX_H / bitmap.height)

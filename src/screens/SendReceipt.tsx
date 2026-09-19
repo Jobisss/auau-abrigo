@@ -13,7 +13,7 @@ export default function SendReceipt() {
   const [opened, setOpened] = useState(false)
 
   const message = [
-    'Oi! Segue o comprovante da doacao pro abrigo',
+    'Oi! Segue o comprovante da doação pro abrigo',
     donation ? `(${formatBRL(donation)})` : '',
     draftPet ? `— pet: ${draftPet.name}, ${formatAge(draftPet.age)}` : '',
   ]
@@ -29,14 +29,14 @@ export default function SendReceipt() {
         Enviar comprovante
       </h1>
       <p className="muted" style={{ textAlign: 'center', fontSize: 15, lineHeight: '23px' }}>
-        Voce sera redirecionado para o WhatsApp para enviar o comprovante da doacao.
+        Você será redirecionado para o WhatsApp para enviar o comprovante da doação.
       </p>
 
       <section className="card card--teal">
         <span className="label">Abrir link externo</span>
         <span className="big-link">wa.me/{SHELTER.whatsapp}</span>
         <span className="card-body" style={{ color: 'var(--ink-soft)' }}>
-          Numero: {SHELTER.whatsapp}
+          Número: {SHELTER.whatsapp}
         </span>
         <SupportNote />
       </section>
@@ -46,10 +46,10 @@ export default function SendReceipt() {
         <ExternalLink size={18} strokeWidth={2.5} className="btn-icon-end" />
       </a>
       <p key={String(opened)} className={`muted hint-text ${opened ? 'is-active' : ''}`}>
-        {opened ? 'Enviou? Toque abaixo para continuar' : 'Apos enviar, volte e continue'}
+        {opened ? 'Enviou? Toque abaixo para continuar' : 'Após enviar, volte e continue'}
       </p>
       <button className={`btn btn--yellow ${opened ? 'btn--attention' : ''}`} onClick={() => navigate('/obrigado')}>
-        Ja enviei — continuar
+        Já enviei — continuar
         <ArrowRight size={20} strokeWidth={2.5} className="btn-icon-end" />
       </button>
     </main>

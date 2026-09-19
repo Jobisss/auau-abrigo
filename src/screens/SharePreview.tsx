@@ -92,7 +92,7 @@ export default function SharePreview() {
     a.href = story.preview
     a.download = story.file.name
     a.click()
-    showToast({ message: 'Imagem salva! Agora e so postar no seu story', tone: 'success' })
+    showToast({ message: 'Imagem salva! Agora é só postar no seu story', tone: 'success' })
   }
 
   /** Folha de compartilhamento do celular (Instagram, WhatsApp…). Sem suporte a arquivo, baixa a imagem. */
@@ -120,8 +120,8 @@ export default function SharePreview() {
       <ScreenHeader title="Compartilhar" icon="close" />
       <p className="muted" style={{ fontSize: 15, lineHeight: '22px' }}>
         {notFound
-          ? 'Esse pet ainda nao esta no feed — ele aparece aqui depois de aprovado.'
-          : 'Escolha o seu story! Todos tem QR Code pra galera postar o pet dela tambem.'}
+          ? 'Esse pet ainda não está no feed — ele aparece aqui depois de aprovado.'
+          : 'Escolha o seu story! Todos têm QR Code pra galera postar o pet dela também.'}
       </p>
 
       {!notFound && (
@@ -160,7 +160,7 @@ export default function SharePreview() {
                   ) : (
                     <span className="story-fallback">
                       <PawPrint size={32} />
-                      {s === 'erro' ? 'Nao deu pra montar esse' : `Montando ${t.label}…`}
+                      {s === 'erro' ? 'Não deu pra montar esse' : `Montando ${t.label}…`}
                     </span>
                   )}
                 </button>

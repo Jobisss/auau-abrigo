@@ -97,8 +97,8 @@ export function SupportNote() {
     <p className="support-note" role="note">
       <Info size={16} strokeWidth={2.5} aria-hidden="true" />
       <span>
-        <strong>Importante:</strong> este app e um projeto independente, sem ligacao direta com o abrigo. Duvidas? Fale
-        com o <strong>suporte neste numero</strong> — nao com o Instagram nem com os funcionarios do abrigo.
+        <strong>Importante:</strong> este app é um projeto independente, sem ligação direta com o abrigo. Dúvidas? Fale
+        com o <strong>suporte neste número</strong> — não com o Instagram nem com os funcionários do abrigo.
       </span>
     </p>
   )
