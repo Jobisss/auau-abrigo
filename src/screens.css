@@ -869,22 +869,51 @@ body:has(.reels) {
 }
 
 /* ============ Compartilhar ============ */
+.story-picker {
+  justify-content: center;
+}
+
+/* Carrossel dos modelos: arrasta pro lado, o do meio é o escolhido */
+.story-carousel {
+  display: flex;
+  gap: 14px;
+  /* vaza até a borda da tela (a .screen tem 20px de padding) */
+  margin: 0 -20px;
+  padding: 10px calc(50% - 115px) 18px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.story-carousel::-webkit-scrollbar {
+  display: none;
+}
+
 /* Prévia do story (1080x1920) no mesmo estilo dos cards */
 .story-frame {
-  align-self: center;
-  width: min(100%, 260px);
+  flex: 0 0 230px;
   aspect-ratio: 9 / 16;
+  padding: 0;
   border: var(--stroke);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   background: var(--cream-deep);
-  rotate: -1.5deg;
-  transition: rotate var(--t-med) var(--ease-spring);
+  scroll-snap-align: center;
+  cursor: pointer;
+  opacity: 0.55;
+  scale: 0.88;
+  transition:
+    scale var(--t-med) var(--ease-spring),
+    rotate var(--t-med) var(--ease-spring),
+    opacity 0.25s ease;
 }
 
-.story-frame:hover {
-  rotate: 0deg;
+.story-frame[aria-current] {
+  opacity: 1;
+  scale: 1;
+  rotate: -1.5deg;
 }
 
 .story-frame img {

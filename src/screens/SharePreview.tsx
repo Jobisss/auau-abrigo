@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
-import { Download, PawPrint, QrCode } from 'lucide-react'
+import { Download, PawPrint } from 'lucide-react'
 import { InstagramIcon, ScreenHeader, haptic, useToast } from '../components/ui'
 import { SHELTER } from '../data/mock'
-import { renderStory } from '../lib/story'
+import { STORY_TEMPLATES, renderStory, type StoryTemplate } from '../lib/story'
 import { useApp } from '../state/AppState'
 
 /** Story pronto: a imagem e uma URL local pra pré-visualizar. */
@@ -12,42 +12,79 @@ interface Story {
   preview: string
 }
 
+type Stories = Partial<Record<StoryTemplate, Story | 'erro'>>
+
 export default function SharePreview() {
   const { petId } = useParams()
   const { pets, feedStatus, reloadFeed } = useApp()
   const pet = pets.find((p) => p.id === petId)
   useEffect(reloadFeed, [reloadFeed])
   const [toast, showToast] = useToast()
-  const [story, setStory] = useState<Story | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [stories, setStories] = useState<Stories>({})
+  const [selected, setSelected] = useState<StoryTemplate>('foto')
   const [busy, setBusy] = useState(false)
+  const carouselRef = useRef<HTMLDivElement>(null)
 
-  // Gera a imagem assim que o pet chega da API — e só de novo se mudar algo que aparece nela
+  // Gera os 3 modelos assim que o pet chega da API — e só de novo se mudar algo que aparece neles
   const petRef = useRef(pet)
   petRef.current = pet
-  const storyKey = pet ? [pet.id, pet.name, pet.age, pet.photo].join('|') : ''
+  const storyKey = pet ? [pet.id, pet.name, pet.age, pet.photo, pet.exoticFood, pet.favoritePlay].join('|') : ''
   useEffect(() => {
     const pet = petRef.current
     if (!pet) return
     let alive = true
-    let preview = ''
-    renderStory(pet, { url: `${location.origin}/` })
-      .then((blob) => {
-        if (!alive) return
-        preview = URL.createObjectURL(blob)
-        const slug = pet.id.replace(/-[0-9a-f]+$/, '')
-        setStory({ file: new File([blob], `${slug}-story.jpg`, { type: 'image/jpeg' }), preview })
-      })
-      .catch(() => alive && setFailed(true))
+    const urls: string[] = []
+    const slug = pet.id.replace(/-[0-9a-f]+$/, '')
+    setStories({})
+    for (const { id } of STORY_TEMPLATES) {
+      renderStory(pet, id, `${location.origin}/`)
+        .then((blob) => {
+          if (!alive) return
+          const preview = URL.createObjectURL(blob)
+          urls.push(preview)
+          const file = new File([blob], `${slug}-${id}.jpg`, { type: 'image/jpeg' })
+          setStories((s) => ({ ...s, [id]: { file, preview } }))
+        })
+        .catch(() => alive && setStories((s) => ({ ...s, [id]: 'erro' })))
+    }
     return () => {
       alive = false
-      if (preview) URL.revokeObjectURL(preview)
+      urls.forEach((u) => URL.revokeObjectURL(u))
     }
   }, [storyKey])
 
+  const current = stories[selected]
+  const story = current && current !== 'erro' ? current : null
+
   const caption = pet
-    ? `Conheca ${pet.name}! Poste o seu pet tambem e ajude o ${SHELTER.name} 🐾 ${location.origin}`
+    ? `${pet.name}! Está pedindo para você ajudar o ${SHELTER.name} 💛 Poste o seu pet também: ${location.origin}`
     : ''
+
+  /** Toque no botão do modelo: rola o carrossel até ele (o scroll atualiza a seleção). */
+  function choose(id: StoryTemplate) {
+    haptic()
+    setSelected(id)
+    carouselRef.current
+      ?.querySelector<HTMLElement>(`[data-template="${id}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }
+
+  /** Arrastar o carrossel: o modelo mais perto do centro vira o escolhido. */
+  function onScroll() {
+    const box = carouselRef.current
+    if (!box) return
+    const center = box.scrollLeft + box.clientWidth / 2
+    let best: StoryTemplate = selected
+    let bestDist = Infinity
+    for (const el of box.querySelectorAll<HTMLElement>('[data-template]')) {
+      const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center)
+      if (dist < bestDist) {
+        bestDist = dist
+        best = el.dataset.template as StoryTemplate
+      }
+    }
+    if (best !== selected) setSelected(best)
+  }
 
   function download() {
     if (!story) return
@@ -84,25 +121,53 @@ export default function SharePreview() {
       <p className="muted" style={{ fontSize: 15, lineHeight: '22px' }}>
         {notFound
           ? 'Esse pet ainda nao esta no feed — ele aparece aqui depois de aprovado.'
-          : 'Seu story ja esta pronto! Tem QR Code pra galera postar o pet dela tambem.'}
+          : 'Escolha o seu story! Todos tem QR Code pra galera postar o pet dela tambem.'}
       </p>
 
       {!notFound && (
-        <div className={`story-frame ${story ? '' : 'skeleton'}`} aria-busy={!story && !failed}>
-          {story ? (
-            <img src={story.preview} alt={`Story de ${pet?.name}: foto, nome e QR Code do site`} />
-          ) : failed ? (
-            <span className="story-fallback">
-              <PawPrint size={32} />
-              Nao deu pra montar a imagem
-            </span>
-          ) : (
-            <span className="story-fallback">
-              <QrCode size={32} />
-              Montando seu story…
-            </span>
-          )}
-        </div>
+        <>
+          <div className="row story-picker" role="radiogroup" aria-label="Modelo do story" style={{ '--gap': '8px' } as CSSProperties}>
+            {STORY_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                className="pill"
+                role="radio"
+                aria-checked={selected === t.id}
+                aria-pressed={selected === t.id}
+                onClick={() => choose(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="story-carousel" ref={carouselRef} onScroll={onScroll}>
+            {STORY_TEMPLATES.map((t) => {
+              const s = stories[t.id]
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  data-template={t.id}
+                  className={`story-frame ${s ? '' : 'skeleton'}`}
+                  aria-current={selected === t.id || undefined}
+                  aria-label={`Modelo ${t.label}`}
+                  aria-busy={!s}
+                  onClick={() => choose(t.id)}
+                >
+                  {s && s !== 'erro' ? (
+                    <img src={s.preview} alt={`Story modelo ${t.label} com a foto de ${pet?.name}`} />
+                  ) : (
+                    <span className="story-fallback">
+                      <PawPrint size={32} />
+                      {s === 'erro' ? 'Nao deu pra montar esse' : `Montando ${t.label}…`}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </>
       )}
 
       <button className="btn btn--blue" onClick={share} disabled={!story} aria-busy={busy}>
