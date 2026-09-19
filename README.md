@@ -73,7 +73,7 @@ bun run start   # produção: um processo só serve o front e a API
 | `VITE_PIX_MERCHANT_NAME` | Nome do recebedor no PIX (até 25 caracteres, sem acento) |
 | `VITE_PIX_MERCHANT_CITY` | Cidade do recebedor (até 15 caracteres, sem acento) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Login do painel do abrigo (senha com 8+ caracteres). **Vazio** = painel fechado |
-| `PORT` | Porta do servidor em produção (Railway/Fly definem sozinhos). Em dev a API fica na 3001 |
+| `PORT` | Porta do servidor em produção (o proxy da VPS aponta pra ela; padrão 3001). Em dev a API fica na 3001 |
 | `DATA_DIR` | Pasta do banco e das fotos (padrão `data/`) |
 | `TRUST_PROXY` | `true` atrás de proxy, pra limitar tentativas de login pelo IP real (`X-Forwarded-For`) |
 
@@ -109,9 +109,9 @@ API em **Bun + [Elysia](https://elysiajs.com)**, banco **SQLite** (`bun:sqlite`,
 | `GET /api/admin/pets` · `PATCH`/`DELETE /api/admin/pets/:id` | Listar, mudar status, remover (apaga a foto junto) |
 | `GET /uploads/:arquivo` | Fotos |
 
-### Deploy na VPS (PM2 + Caddy)
+### Deploy na VPS (PM2)
 
-Precisa de um lugar com **disco persistente** — aqui, uma VPS. (A Vercel não serve: o disco é apagado a cada deploy.) Na VPS: **Bun**, **Node + PM2** (`npm i -g pm2`) e **Caddy** (HTTPS automático).
+Precisa de um lugar com **disco persistente** — aqui, uma VPS. (A Vercel não serve: o disco é apagado a cada deploy.) Na VPS: **Bun**, **Node + PM2** (`npm i -g pm2`) e o **proxy com HTTPS** que você já usa (Nginx, Caddy…).
 
 **DNS** — no painel do domínio, aponte o subdomínio pro IP da VPS (`A auau → IP`, ou `A * → IP` pra todos os projetos).
 
@@ -119,13 +119,21 @@ Precisa de um lugar com **disco persistente** — aqui, uma VPS. (A Vercel não 
 
 ```bash
 git clone https://github.com/Jobisss/auau-abrigo.git && cd auau-abrigo
-cp .env.example .env && nano .env   # PIX + ADMIN_EMAIL/ADMIN_PASSWORD
+cp .env.example .env && nano .env   # PIX + ADMIN_EMAIL/ADMIN_PASSWORD + PORT
 bun install && bun run build        # o .env precisa existir antes: VITE_PIX_* entra no front
-pm2 start ecosystem.config.cjs      # sobe na porta 3000 (ver ecosystem.config.cjs)
+pm2 start ecosystem.config.cjs      # sobe na porta do PORT no .env
 pm2 save && pm2 startup             # volta sozinho se a VPS reiniciar — rode o comando que ele imprimir
 ```
 
-Cole o bloco de [`deploy/Caddyfile`](deploy/Caddyfile) no `/etc/caddy/Caddyfile` (trocando o subdomínio) e `sudo systemctl reload caddy`.
+**Proxy** — aponte o subdomínio pra `http://127.0.0.1:<PORT>` e confira:
+
+1. **Upload de até 6 MB** liberado (o Nginx bloqueia acima de 1 MB por padrão → erro 413 nas fotos)
+2. **`X-Forwarded-For` com o IP real, substituindo** o que vier do visitante — o limite de tentativas de login usa o primeiro IP desse cabeçalho
+
+Exemplos prontos: [`deploy/nginx.conf`](deploy/nginx.conf) · [`deploy/Caddyfile`](deploy/Caddyfile) (o Caddy já faz os dois sozinho).
+
+> [!IMPORTANT]
+> A porta fica **só** no `.env` (`PORT`). Não coloque `PORT` no `ecosystem.config.cjs`: o que o PM2 passa tem prioridade sobre o `.env`.
 
 **Atualizar:**
 
@@ -164,7 +172,8 @@ Em produção os pets de exemplo **não** são criados, e `data/` nunca é tocad
 
 ```
 deploy/
-├── Caddyfile             # bloco do proxy reverso com HTTPS
+├── nginx.conf            # exemplo de proxy reverso (Nginx)
+├── Caddyfile             # exemplo de proxy reverso (Caddy)
 └── backup.sh             # backup diário de data/ (cron)
 ecosystem.config.cjs      # PM2 na VPS
 server/

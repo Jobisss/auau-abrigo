@@ -1,6 +1,7 @@
 /**
  * PM2 na VPS: `pm2 start ecosystem.config.cjs`
- * ADMIN_* e VITE_PIX_* ficam no .env ao lado deste arquivo (o Bun lê sozinho).
+ * PORT, ADMIN_* e VITE_PIX_* ficam no .env ao lado deste arquivo (o Bun lê sozinho).
+ * Não defina PORT aqui: o que o PM2 passa tem prioridade sobre o .env.
  */
 module.exports = {
   apps: [
@@ -13,7 +14,6 @@ module.exports = {
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
         // O Caddy na frente repassa o IP real do visitante
         TRUST_PROXY: 'true',
       },
