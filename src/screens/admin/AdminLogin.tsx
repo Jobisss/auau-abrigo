@@ -12,20 +12,30 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [sending, setSending] = useState(false)
 
   if (isAdmin) return <Navigate to="/admin" replace />
 
-  function onSubmit(e: FormEvent) {
+  function fail(message: string) {
+    setError(message)
+    setAttempt((a) => a + 1)
+    haptic(40)
+  }
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    // Sem backend: qualquer e-mail válido + senha com 4+ caracteres entra.
-    if (!/^\S+@\S+\.\S+$/.test(email) || password.length < 4) {
-      setError('Confira o e-mail e a senha.')
-      setAttempt((a) => a + 1)
-      haptic(40)
-      return
+    if (sending) return
+    if (!/^\S+@\S+\.\S+$/.test(email) || !password) return fail('Confira o e-mail e a senha.')
+
+    setSending(true)
+    try {
+      await login(email, password)
+      navigate('/admin')
+    } catch (err) {
+      fail((err as Error).message)
+    } finally {
+      setSending(false)
     }
-    login()
-    navigate('/admin')
   }
 
   return (
@@ -85,7 +95,7 @@ export default function AdminLogin() {
               {error}
             </span>
           )}
-          <button type="submit" className="btn btn--blue">
+          <button type="submit" className="btn btn--blue" disabled={sending} aria-busy={sending}>
             <LogIn size={20} strokeWidth={2.5} />
             <span className="only-mobile">Entrar</span>
             <span className="only-desktop">Entrar no painel</span>

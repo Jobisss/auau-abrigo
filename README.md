@@ -14,6 +14,8 @@ App web mobile-first feito para o **[Abrigo Toca de Assis](https://www.instagram
 ![Vite](https://img.shields.io/badge/Vite-8-FEC601?style=for-the-badge&logo=vite&logoColor=1A2B4A)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-2364AA?style=for-the-badge&logo=typescript&logoColor=white)
 ![PIX](https://img.shields.io/badge/PIX-pix--utils-73BFB8?style=for-the-badge&logo=pix&logoColor=1A2B4A)
+![Bun](https://img.shields.io/badge/Bun-Elysia-FFF9F0?style=for-the-badge&logo=bun&logoColor=1A2B4A)
+![SQLite](https://img.shields.io/badge/SQLite-bun:sqlite-2364AA?style=for-the-badge&logo=sqlite&logoColor=white)
 
 </div>
 
@@ -48,19 +50,19 @@ flowchart LR
 
 ## 🚀 Rodando
 
-Precisa de **Node 20+**.
+Precisa do **[Bun](https://bun.sh) 1.3+**.
 
 ```bash
-npm install
-cp .env.example .env
-npm run dev
+bun install
+cp .env.example .env   # preencha a chave PIX e o login do painel
+bun run dev            # sobe a API (3001) e o Vite (5173) juntos
 ```
 
-Abre em **http://localhost:5173**. Pro painel, vá em `/admin/login` — enquanto não há backend, qualquer e-mail válido com senha de 4+ caracteres entra.
+Abre em **http://localhost:5173** — o Vite encaminha `/api` e `/uploads` pra API. Na primeira vez, o banco é criado em `data/` com 3 pets de exemplo. Pro painel, vá em `/admin/login` com o `ADMIN_EMAIL` / `ADMIN_PASSWORD` do `.env`.
 
 ```bash
-npm run build     # build de produção em dist/
-npm run preview   # serve o build localmente
+bun run build   # confere os tipos (front + server) e gera dist/
+bun run start   # produção: um processo só serve o front e a API
 ```
 
 ## ⚙️ Configuração (`.env`)
@@ -70,9 +72,52 @@ npm run preview   # serve o build localmente
 | `VITE_PIX_KEY` | Chave PIX **do abrigo** (telefone `+55DDDNUMERO`, e-mail, CPF/CNPJ ou aleatória). **Vazia** = o app esconde o QR e orienta a doar pelo WhatsApp |
 | `VITE_PIX_MERCHANT_NAME` | Nome do recebedor no PIX (até 25 caracteres, sem acento) |
 | `VITE_PIX_MERCHANT_CITY` | Cidade do recebedor (até 15 caracteres, sem acento) |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Login do painel do abrigo (senha com 8+ caracteres). **Vazio** = painel fechado |
+| `PORT` | Porta do servidor em produção (Railway/Fly definem sozinhos). Em dev a API fica na 3001 |
+| `DATA_DIR` | Pasta do banco e das fotos (padrão `data/`) |
+| `TRUST_PROXY` | `true` atrás de proxy, pra limitar tentativas de login pelo IP real (`X-Forwarded-For`) |
+
+> [!WARNING]
+> Só as variáveis com prefixo `VITE_` vão pro navegador — e **qualquer pessoa consegue ler**. Nunca coloque senha ou token com esse prefixo.
 
 > [!NOTE]
-> O Vite só lê o `.env` quando inicia — depois de mudar, reinicie o `npm run dev`.
+> O Vite e a API só leem o `.env` quando iniciam — depois de mudar, reinicie o `bun run dev`.
+
+## 🗄️ Backend
+
+API em **Bun + [Elysia](https://elysiajs.com)**, banco **SQLite** (`bun:sqlite`, sem dependência nativa) em `server/`.
+
+| Decisão | Por quê |
+| --- | --- |
+| **Fotos em disco** (`data/uploads/<uuid>.jpg`), servidas pelo próprio servidor | Simples e barato. O banco guarda só o nome do arquivo; nome UUID = cache "eterno" no navegador. Trocar por um bucket (R2/S3) é mexer só em `server/storage.ts` |
+| **Foto reduzida no celular** antes de subir (máx. 1080×1920, JPEG) | Foto de 3–10 MB vira ~300 KB: upload rápido no 4G e feed leve. O servidor ainda trava em 5 MB e confere o conteúdo real do arquivo (JPG/PNG/WebP) |
+| **Tudo que persiste mora em `data/`** | Um volume só pra montar no servidor e fazer backup |
+| **Login único do abrigo** no `.env`, sessão em cookie `httpOnly` | Sem tabela de usuários pra manter. O JavaScript da página nunca vê o token; 5 erros por IP = 15 min de espera |
+| **API pública não expõe** telefone do tutor nem valor doado | Só o painel (`/api/admin/*`) vê esses dados |
+| **Token de edição** devolvido no cadastro | Só quem cadastrou o pet informa o valor da doação |
+| **Curtidas anônimas** | O aparelho lembra o que já curtiu; o servidor só soma |
+
+### Rotas
+
+| Rota | O que faz |
+| --- | --- |
+| `GET /api/pets` · `GET /api/pets/:id` | Feed público (só aprovados) |
+| `POST /api/pets` | Cadastro (multipart com `photo`) → devolve o pet + `editToken` |
+| `PUT /api/pets/:id/donation` | Valor escolhido (header `X-Edit-Token`, só enquanto pendente) |
+| `POST /api/pets/:id/like` | `{ liked: true \| false }` |
+| `POST /api/admin/login` · `logout` · `GET /api/admin/me` | Sessão do painel |
+| `GET /api/admin/pets` · `PATCH`/`DELETE /api/admin/pets/:id` | Listar, mudar status, remover (apaga a foto junto) |
+| `GET /uploads/:arquivo` | Fotos |
+
+### Deploy
+
+Precisa de um lugar com **disco persistente** — Railway, Fly.io ou uma VPS. (A Vercel não serve: o disco é apagado a cada deploy.)
+
+1. `bun install && bun run build`
+2. `bun run start` com `NODE_ENV=production` (o script já define), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `VITE_PIX_*` (no build) e `TRUST_PROXY=true`
+3. Monte um **volume** em `data/` (ou aponte `DATA_DIR` pra ele) e faça backup dessa pasta
+
+Em produção os pets de exemplo **não** são criados.
 
 ## 🗺️ Telas
 
@@ -91,15 +136,24 @@ npm run preview   # serve o build localmente
 ## 🧱 Estrutura
 
 ```
+server/
+├── index.ts              # rotas (Elysia) + fotos + front em produção
+├── db.ts                 # SQLite: schema, formato público/admin, pets de exemplo
+├── storage.ts            # onde as fotos ficam (disco) — trocar aqui pra usar bucket
+├── auth.ts               # login do painel, sessão, limite de tentativas
+├── config.ts             # variáveis de ambiente e pastas
+└── seed/                 # fotos dos pets de exemplo
 src/
 ├── App.tsx               # rotas
 ├── main.tsx
 ├── styles.css            # tokens (cores, sombras, motion) + componentes base
 ├── screens.css           # estilos e animações de cada tela
 ├── components/ui.tsx     # header, menu de suporte, toast, modal, confete, count-up…
-├── data/mock.ts          # dados do abrigo e pets de exemplo
+├── data/mock.ts          # dados do abrigo e tipos
+├── lib/api.ts            # cliente da API
+├── lib/image.ts          # reduz a foto antes do upload
 ├── lib/pix.ts            # geração do PIX (BR Code + QR)
-├── state/AppState.tsx    # estado global (localStorage)
+├── state/AppState.tsx    # estado global (feed, pet recém-cadastrado, sessão do painel)
 └── screens/
     ├── HowItWorks.tsx  AddPet.tsx  Donation.tsx  SendReceipt.tsx  Thanks.tsx
     ├── Reels.tsx  SharePreview.tsx  Shelter.tsx
@@ -121,9 +175,11 @@ Fontes: **Balsamiq Sans** (texto) e **Just Me Again Down Here** (títulos à mã
 
 ## 🛣️ Próximos passos
 
-- [ ] Backend: salvar pets, fotos e aprovações de verdade
-- [ ] Login real pro painel do abrigo
-- [ ] Chave PIX oficial do abrigo no `.env`
+- [x] Backend: salvar pets, fotos e aprovações de verdade
+- [x] Login real pro painel do abrigo
+- [x] Chave PIX oficial do abrigo no `.env`
+- [ ] Deploy com volume persistente e backup de `data/`
+- [ ] Limpar pets pendentes abandonados (cadastrou e nunca doou)
 - [ ] Upload de comprovante direto no app
 
 ## 💛 Ajude o abrigo

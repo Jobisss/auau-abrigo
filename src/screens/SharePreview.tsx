@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
 import { PawPrint, QrCode } from 'lucide-react'
 import { InstagramIcon, ScreenHeader, useToast } from '../components/ui'
@@ -7,8 +7,9 @@ import { useApp } from '../state/AppState'
 
 export default function SharePreview() {
   const { petId } = useParams()
-  const { pets } = useApp()
+  const { pets, reloadFeed } = useApp()
   const pet = pets.find((p) => p.id === petId)
+  useEffect(reloadFeed, [reloadFeed])
   const [toast, showToast] = useToast()
   const [busy, setBusy] = useState(false)
 

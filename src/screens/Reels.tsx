@@ -18,18 +18,20 @@ const SPARKS = [
 export default function Reels() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { pets } = useApp()
+  const { pets, feedStatus, reloadFeed } = useApp()
   const feed = pets.filter((p) => p.status === 'ativo').sort((a, b) => b.createdAt - a.createdAt)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
 
-  // Deep link: /reels?pet=<id> abre direto naquele pet
+  useEffect(reloadFeed, [reloadFeed])
+
+  // Deep link: /reels?pet=<id> abre direto naquele pet (espera o feed chegar da API)
   useEffect(() => {
     const id = params.get('pet')
-    if (!id) return
+    if (!id || feed.length === 0) return
     const el = scrollRef.current?.querySelector<HTMLElement>(`[data-pet="${CSS.escape(id)}"]`)
     el?.scrollIntoView({ block: 'start' })
-  }, [params])
+  }, [params, feed.length])
 
   return (
     <div className="reels">
@@ -41,7 +43,20 @@ export default function Reels() {
       </div>
 
       <div className="reels-scroll" ref={scrollRef} onScroll={() => !scrolled && setScrolled(true)}>
-        {feed.length === 0 ? (
+        {feed.length === 0 && feedStatus === 'loading' ? (
+          <div className="reel reel--empty" aria-busy="true">
+            <PawPrint size={48} />
+            <p>Carregando os pets…</p>
+          </div>
+        ) : feed.length === 0 && feedStatus === 'error' ? (
+          <div className="reel reel--empty">
+            <PawPrint size={48} />
+            <p>Nao deu pra carregar o feed.</p>
+            <button className="btn btn--yellow" style={{ width: 'auto' }} onClick={reloadFeed}>
+              Tentar de novo
+            </button>
+          </div>
+        ) : feed.length === 0 ? (
           <div className="reel reel--empty">
             <PawPrint size={48} />
             <p>Nenhum pet no feed ainda.</p>

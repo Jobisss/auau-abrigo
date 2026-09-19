@@ -1,7 +1,8 @@
-import { useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Apple, Camera, CircleAlert, Footprints, HeartHandshake, ImagePlus, Phone, RefreshCw, Send } from 'lucide-react'
 import { PawPattern, ScreenHeader, haptic } from '../components/ui'
+import { resizeImage } from '../lib/image'
 import { useApp } from '../state/AppState'
 
 interface Form {
@@ -22,15 +23,6 @@ function maskPhone(v: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
 }
 
-function readAsDataURL(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => resolve(r.result as string)
-    r.onerror = reject
-    r.readAsDataURL(file)
-  })
-}
-
 export default function AddPet() {
   const navigate = useNavigate()
   const { addPet } = useApp()
@@ -39,7 +31,11 @@ export default function AddPet() {
   const nameRef = useRef<HTMLInputElement>(null)
   const ageRef = useRef<HTMLInputElement>(null)
   const contactRef = useRef<HTMLInputElement>(null)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  /** URL local só pra pré-visualizar — a foto só sobe pro servidor ao publicar. */
   const [photo, setPhoto] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [dragging, setDragging] = useState(false)
   const [form, setForm] = useState<Form>(EMPTY)
   /** Incrementa a cada envio inválido — remonta os erros e repete o "shake". */
@@ -56,9 +52,17 @@ export default function AddPet() {
   }
   const touched = attempt > 0
 
-  async function loadFile(file?: File) {
+  useEffect(() => {
+    if (!photoFile) return
+    const url = URL.createObjectURL(photoFile)
+    setPhoto(url)
+    return () => URL.revokeObjectURL(url)
+  }, [photoFile])
+
+  function loadFile(file?: File) {
     if (!file || !file.type.startsWith('image/')) return
-    setPhoto(await readAsDataURL(file))
+    setPhotoFile(file)
+    setSubmitError('')
   }
 
   function onDrop(e: DragEvent) {
@@ -67,8 +71,9 @@ export default function AddPet() {
     loadFile(e.dataTransfer.files?.[0])
   }
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault()
+    if (sending) return
     const firstInvalid = [
       errors.photo && photoRef,
       errors.name && nameRef,
@@ -76,7 +81,7 @@ export default function AddPet() {
       errors.contact && contactRef,
     ].find(Boolean)
 
-    if (firstInvalid || !photo) {
+    if (firstInvalid || !photoFile) {
       setAttempt((a) => a + 1)
       haptic(40)
       const el = firstInvalid ? firstInvalid.current : photoRef.current
@@ -85,16 +90,28 @@ export default function AddPet() {
       return
     }
 
-    addPet({
-      name: form.name.trim(),
-      age: form.age.replace(/\D/g, '') || form.age.trim(),
-      photo,
-      exoticFood: form.exoticFood.trim() || '—',
-      adoptedHow: form.adoptedHow.trim() || '—',
-      favoritePlay: form.favoritePlay.trim() || '—',
-      contact: form.contact,
-    })
-    navigate('/doacao')
+    setSending(true)
+    setSubmitError('')
+    try {
+      // Campos opcionais vazios viram "—" no servidor
+      await addPet(
+        {
+          name: form.name.trim(),
+          age: form.age.replace(/\D/g, '') || form.age.trim(),
+          exoticFood: form.exoticFood.trim(),
+          adoptedHow: form.adoptedHow.trim(),
+          favoritePlay: form.favoritePlay.trim(),
+          contact: form.contact,
+        },
+        await resizeImage(photoFile),
+      )
+      navigate('/doacao')
+    } catch (err) {
+      setSubmitError((err as Error).message)
+      haptic(40)
+    } finally {
+      setSending(false)
+    }
   }
 
   const err = (k: keyof typeof errors) =>
@@ -216,8 +233,14 @@ export default function AddPet() {
           />
         </Field>
 
-        <button type="submit" className="btn btn--blue" style={{ marginTop: 6 }}>
-          Publicar pet
+        {submitError && (
+          <span className="field-error" role="alert">
+            <CircleAlert size={13} strokeWidth={2.5} />
+            {submitError}
+          </span>
+        )}
+        <button type="submit" className="btn btn--blue" style={{ marginTop: 6 }} disabled={sending} aria-busy={sending}>
+          {sending ? 'Enviando…' : 'Publicar pet'}
           <Send size={20} strokeWidth={2.5} className="btn-icon-end" />
         </button>
       </form>

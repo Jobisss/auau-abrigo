@@ -1,38 +1,45 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { SEED_PETS, type Pet, type PetStatus } from '../data/mock'
+import type { Pet } from '../data/mock'
+import { api, type NewPetFields } from '../lib/api'
 
 /**
- * Estado global só de front-end (sem backend).
- * Persiste em localStorage para o fluxo sobreviver a um refresh.
- * Quando o backend existir, troque estas ações por chamadas de API.
+ * Estado global. Os dados de verdade (pets, curtidas, aprovações) vivem na API;
+ * o localStorage guarda só o que é deste aparelho: o pet que a pessoa acabou de
+ * cadastrar (com o token pra informar a doação) e a lista do que ela já curtiu.
  */
 
-export type NewPet = Omit<Pet, 'id' | 'status' | 'likes' | 'createdAt' | 'donation'>
+export type FeedStatus = 'loading' | 'ready' | 'error'
+
+interface Draft {
+  pet: Pet
+  /** Prova pra API que este aparelho cadastrou o pet (usado pra informar o valor doado). */
+  token: string
+}
 
 interface AppState {
+  /** Feed público: só pets aprovados. Carregado pelas telas que usam (reloadFeed). */
   pets: Pet[]
+  feedStatus: FeedStatus
+  reloadFeed: () => void
   /** Pet que o usuário acabou de cadastrar (fluxo doação → obrigado). */
   draftPet: Pet | null
   donation: number | null
   liked: string[]
-  isAdmin: boolean
-  addPet: (pet: NewPet) => Pet
+  /** null enquanto confere a sessão com o servidor. */
+  isAdmin: boolean | null
+  addPet: (fields: NewPetFields, photo: Blob) => Promise<Pet>
   setDonation: (value: number) => void
-  setStatus: (id: string, status: PetStatus) => void
-  removePet: (id: string) => void
   toggleLike: (id: string) => void
-  login: () => void
-  logout: () => void
+  login: (email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
 }
 
-const STORAGE_KEY = 'patinhas:v1'
+const STORAGE_KEY = 'patinhas:v2'
 
 interface Persisted {
-  pets: Pet[]
-  draftId: string | null
+  draft: Draft | null
   donation: number | null
   liked: string[]
-  isAdmin: boolean
 }
 
 function load(): Persisted | null {
@@ -48,38 +55,43 @@ const Ctx = createContext<AppState | null>(null)
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const initial = useMemo(load, [])
-  const [pets, setPets] = useState<Pet[]>(initial?.pets ?? SEED_PETS)
-  const [draftId, setDraftId] = useState<string | null>(initial?.draftId ?? null)
+  const [pets, setPets] = useState<Pet[]>([])
+  const [feedStatus, setFeedStatus] = useState<FeedStatus>('loading')
+  const [draft, setDraft] = useState<Draft | null>(initial?.draft ?? null)
   const [donation, setDonationState] = useState<number | null>(initial?.donation ?? null)
   const [liked, setLiked] = useState<string[]>(initial?.liked ?? [])
-  const [isAdmin, setIsAdmin] = useState(initial?.isAdmin ?? false)
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
   useEffect(() => {
-    const data: Persisted = { pets, draftId, donation, liked, isAdmin }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, donation, liked } satisfies Persisted))
     } catch {
-      // Foto em base64 pode estourar a cota — segue só em memória.
-      try {
-        const light = { ...data, pets: pets.map((p) => (p.photo.startsWith('data:') ? { ...p, photo: '' } : p)) }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(light))
-      } catch {
-        /* ignora */
-      }
+      /* modo privado / cota cheia — segue só em memória */
     }
-  }, [pets, draftId, donation, liked, isAdmin])
+  }, [draft, donation, liked])
 
-  const addPet = useCallback((input: NewPet) => {
-    const pet: Pet = {
-      ...input,
-      id: `${input.name.toLowerCase().replace(/\W+/g, '-')}-${Date.now().toString(36)}`,
-      status: 'pendente',
-      likes: 0,
-      donation: 0,
-      createdAt: Date.now(),
-    }
-    setPets((list) => [pet, ...list])
-    setDraftId(pet.id)
+  /** Busca o feed de novo. Quem já tem pets na tela não volta pro "carregando" — só troca a lista. */
+  const reloadFeed = useCallback(() => {
+    setFeedStatus((s) => (s === 'ready' ? s : 'loading'))
+    api.pets
+      .list()
+      .then((list) => {
+        setPets(list)
+        setFeedStatus('ready')
+      })
+      .catch(() => setFeedStatus('error'))
+  }, [])
+
+  useEffect(() => {
+    api.admin
+      .me()
+      .then((r) => setIsAdmin(r.admin))
+      .catch(() => setIsAdmin(false))
+  }, [])
+
+  const addPet = useCallback(async (fields: NewPetFields, photo: Blob) => {
+    const { pet, editToken } = await api.pets.create(fields, photo)
+    setDraft({ pet, token: editToken })
     setDonationState(null)
     return pet
   }, [])
@@ -87,41 +99,53 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const setDonation = useCallback(
     (value: number) => {
       setDonationState(value)
-      if (draftId) setPets((list) => list.map((p) => (p.id === draftId ? { ...p, donation: value } : p)))
+      if (!draft) return
+      // O painel mostra esse valor como "pendente de confirmação"; se falhar, o comprovante no WhatsApp ainda vale.
+      api.pets.setDonation(draft.pet.id, draft.token, value).catch((e) => console.warn('[doação]', e))
     },
-    [draftId],
+    [draft],
   )
-
-  const setStatus = useCallback((id: string, status: PetStatus) => {
-    setPets((list) => list.map((p) => (p.id === id ? { ...p, status } : p)))
-  }, [])
-
-  const removePet = useCallback((id: string) => {
-    setPets((list) => list.filter((p) => p.id !== id))
-  }, [])
 
   const toggleLike = useCallback(
     (id: string) => {
-      const has = liked.includes(id)
-      setLiked(has ? liked.filter((x) => x !== id) : [...liked, id])
-      setPets((list) => list.map((p) => (p.id === id ? { ...p, likes: p.likes + (has ? -1 : 1) } : p)))
+      const willLike = !liked.includes(id)
+      setLiked((list) => (willLike ? [...list, id] : list.filter((x) => x !== id)))
+      setPets((list) => list.map((p) => (p.id === id ? { ...p, likes: Math.max(0, p.likes + (willLike ? 1 : -1)) } : p)))
+      api.pets
+        .like(id, willLike)
+        .then(({ likes }) => setPets((list) => list.map((p) => (p.id === id ? { ...p, likes } : p))))
+        .catch(() => {
+          // Desfaz o otimista
+          setLiked((list) => (willLike ? list.filter((x) => x !== id) : [...list, id]))
+          setPets((list) => list.map((p) => (p.id === id ? { ...p, likes: Math.max(0, p.likes + (willLike ? -1 : 1)) } : p)))
+        })
     },
     [liked],
   )
 
+  const login = useCallback(async (email: string, password: string) => {
+    await api.admin.login(email, password)
+    setIsAdmin(true)
+  }, [])
+
+  const logout = useCallback(async () => {
+    await api.admin.logout().catch(() => {})
+    setIsAdmin(false)
+  }, [])
+
   const value: AppState = {
     pets,
-    draftPet: pets.find((p) => p.id === draftId) ?? null,
+    feedStatus,
+    reloadFeed,
+    draftPet: draft?.pet ?? null,
     donation,
     liked,
     isAdmin,
     addPet,
     setDonation,
-    setStatus,
-    removePet,
     toggleLike,
-    login: () => setIsAdmin(true),
-    logout: () => setIsAdmin(false),
+    login,
+    logout,
   }
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

@@ -1,8 +1,9 @@
-import { useCallback, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { LogOut, MessageCircle, PawPrint } from 'lucide-react'
 import { ConfirmDialog, CountUp, useToast } from '../../components/ui'
-import { formatBRL, type Pet, type PetStatus } from '../../data/mock'
+import { formatBRL, type AdminPet as Pet, type PetStatus } from '../../data/mock'
+import { ApiError, api } from '../../lib/api'
 import { useApp } from '../../state/AppState'
 
 const FILTERS: { value: PetStatus; mobile: string; desktop: string }[] = [
@@ -27,15 +28,64 @@ const money = (n: number) => formatBRL(Math.round(n)).replace(',00', '')
 
 type Actions = Record<'approve' | 'hide' | 'remove', (p: Pet) => void>
 
+/**
+ * Lista do painel vinda da API. As ações mudam a tela na hora (otimista)
+ * e voltam atrás, com aviso, se o servidor recusar.
+ */
+function useAdminPets(enabled: boolean, onError: (err: unknown) => void) {
+  const [pets, setPets] = useState<Pet[] | null>(null)
+  const petsRef = useRef<Pet[]>([])
+  petsRef.current = pets ?? []
+  const onErrorRef = useRef(onError)
+  onErrorRef.current = onError
+
+  useEffect(() => {
+    if (!enabled) return
+    api.admin
+      .list()
+      .then(setPets)
+      .catch((e) => onErrorRef.current(e))
+  }, [enabled])
+
+  const setStatus = useCallback((id: string, status: PetStatus) => {
+    const prev = petsRef.current.find((p) => p.id === id)?.status
+    if (!prev) return
+    const apply = (s: PetStatus) => setPets((list) => list && list.map((p) => (p.id === id ? { ...p, status: s } : p)))
+    apply(status)
+    api.admin.setStatus(id, status).catch((e) => {
+      apply(prev)
+      onErrorRef.current(e)
+    })
+  }, [])
+
+  const removePet = useCallback((id: string) => {
+    const pet = petsRef.current.find((p) => p.id === id)
+    if (!pet) return
+    setPets((list) => list && list.filter((p) => p.id !== id))
+    api.admin.remove(id).catch((e) => {
+      setPets((list) => list && [pet, ...list].sort((a, b) => b.createdAt - a.createdAt))
+      onErrorRef.current(e)
+    })
+  }, [])
+
+  return { pets: pets ?? [], loading: pets === null, setStatus, removePet }
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const { pets, isAdmin, logout, setStatus, removePet } = useApp()
+  const { isAdmin, logout } = useApp()
   const [filter, setFilter] = useState<PetStatus>('pendente')
   const [leaving, setLeaving] = useState<string[]>([])
   const [confirming, setConfirming] = useState<Pet | null>(null)
   const [toast, showToast] = useToast()
   const closeConfirm = useCallback(() => setConfirming(null), [])
+  const { pets, loading, setStatus, removePet } = useAdminPets(isAdmin === true, (err) => {
+    // Sessão expirou no meio do caminho: volta pro login
+    if (err instanceof ApiError && err.status === 401) return void logout()
+    showToast({ message: (err as Error).message, tone: 'error' })
+  })
 
+  if (isAdmin === null) return null
   if (!isAdmin) return <Navigate to="/admin/login" replace />
 
   const count = (s: PetStatus) => pets.filter((p) => p.status === s).length
@@ -108,8 +158,8 @@ export default function AdminDashboard() {
         </div>
         <button
           className="pill"
-          onClick={() => {
-            logout()
+          onClick={async () => {
+            await logout()
             navigate('/admin/login')
           }}
         >
@@ -147,7 +197,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {list.length === 0 && (
+      {!loading && list.length === 0 && (
         <div key={filter} className="admin-empty">
           <PawPrint size={32} />
           <p className="muted">{EMPTY_TEXT[filter]}</p>
