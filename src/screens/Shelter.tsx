@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, HandHeart, MapPin } from 'lucide-react'
+import { ArrowLeft, HandHeart } from 'lucide-react'
 import hero from '../assets/abrigo-hero.jpg'
 import { CountUp, InstagramIcon, ScreenHeader } from '../components/ui'
 import { SHELTER } from '../data/mock'
@@ -30,18 +30,12 @@ export default function Shelter() {
 
       <div className="stack" style={{ '--gap': '8px' } as CSSProperties}>
         <h2 className="h2">{SHELTER.name}</h2>
-        <p className="muted row" style={{ fontSize: 15, lineHeight: '22px', '--gap': '6px' } as CSSProperties}>
-          <MapPin size={16} strokeWidth={2.2} color="var(--blue)" />
-          {SHELTER.tagline}
-        </p>
+        <ul className="shelter-bio">
+          {SHELTER.bio.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
       </div>
-
-      <section className="card card--lg" style={{ gap: 12 }}>
-        <h2 className="h2">Nossa missão</h2>
-        <p className="card-body" style={{ fontSize: 15, lineHeight: '22px' }}>
-          {SHELTER.mission}
-        </p>
-      </section>
 
       <div className="stats-row cascade" style={{ '--base': 200 } as CSSProperties}>
         {SHELTER.stats.map((s) => (

@@ -451,6 +451,24 @@
 }
 
 /* ============ Abrigo ============ */
+/* Bio do abrigo: o emoji abre a linha e o texto que quebra alinha embaixo dele */
+.shelter-bio {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink);
+}
+
+.shelter-bio li {
+  padding-left: 1.9em;
+  text-indent: -1.9em;
+}
+
 .hero-img {
   width: 100%;
   aspect-ratio: 350 / 150;

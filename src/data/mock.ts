@@ -25,9 +25,13 @@ export const SHELTER = {
   name: 'Abrigo Toca de Assis',
   shortName: 'Toca de Assis',
   city: 'Ivaiporã - PR',
-  tagline: 'ONG de proteção animal em Ivaiporã - PR.',
-  mission:
-    'Resgatamos animais feridos, em risco e vítimas de maus-tratos — cães, gatos e todo bichinho que precisar. Sua doação ajuda com ração, veterinário e cuidados diários e pode salvar vidas.',
+  /** Bio do abrigo, no estilo do perfil do Instagram. */
+  bio: [
+    '🐾 ONG de proteção animal',
+    '🚑 Resgatamos animais feridos, em risco e vítimas de maus-tratos',
+    '🏠 Sua doação pode salvar vidas ❤️',
+    '📍 Ivaiporã/PR',
+  ],
   instagram: 'abrigotocadeassisivaipora',
   instagramUrl: 'https://www.instagram.com/abrigotocadeassisivaipora/',
   whatsapp: '43998664156',
