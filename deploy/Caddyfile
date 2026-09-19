@@ -1,0 +1,7 @@
+# Bloco pra colar no /etc/caddy/Caddyfile da VPS — troque o subdomínio.
+# O Caddy gera e renova o HTTPS sozinho. Depois: sudo systemctl reload caddy
+
+auau.joaoschianti.com {
+	encode zstd gzip
+	reverse_proxy localhost:3000
+}

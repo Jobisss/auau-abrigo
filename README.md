@@ -109,15 +109,42 @@ API em **Bun + [Elysia](https://elysiajs.com)**, banco **SQLite** (`bun:sqlite`,
 | `GET /api/admin/pets` · `PATCH`/`DELETE /api/admin/pets/:id` | Listar, mudar status, remover (apaga a foto junto) |
 | `GET /uploads/:arquivo` | Fotos |
 
-### Deploy
+### Deploy na VPS (PM2 + Caddy)
 
-Precisa de um lugar com **disco persistente** — Railway, Fly.io ou uma VPS. (A Vercel não serve: o disco é apagado a cada deploy.)
+Precisa de um lugar com **disco persistente** — aqui, uma VPS. (A Vercel não serve: o disco é apagado a cada deploy.) Na VPS: **Bun**, **Node + PM2** (`npm i -g pm2`) e **Caddy** (HTTPS automático).
 
-1. `bun install && bun run build`
-2. `bun run start` com `NODE_ENV=production` (o script já define), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `VITE_PIX_*` (no build) e `TRUST_PROXY=true`
-3. Monte um **volume** em `data/` (ou aponte `DATA_DIR` pra ele) e faça backup dessa pasta
+**DNS** — no painel do domínio, aponte o subdomínio pro IP da VPS (`A auau → IP`, ou `A * → IP` pra todos os projetos).
 
-Em produção os pets de exemplo **não** são criados.
+**Primeira vez:**
+
+```bash
+git clone https://github.com/Jobisss/auau-abrigo.git && cd auau-abrigo
+cp .env.example .env && nano .env   # PIX + ADMIN_EMAIL/ADMIN_PASSWORD
+bun install && bun run build        # o .env precisa existir antes: VITE_PIX_* entra no front
+pm2 start ecosystem.config.cjs      # sobe na porta 3000 (ver ecosystem.config.cjs)
+pm2 save && pm2 startup             # volta sozinho se a VPS reiniciar — rode o comando que ele imprimir
+```
+
+Cole o bloco de [`deploy/Caddyfile`](deploy/Caddyfile) no `/etc/caddy/Caddyfile` (trocando o subdomínio) e `sudo systemctl reload caddy`.
+
+**Atualizar:**
+
+```bash
+git pull && bun install && bun run build && pm2 reload auau-abrigo
+```
+
+**Backup** — [`deploy/backup.sh`](deploy/backup.sh) copia o banco (com o app rodando) + as fotos e guarda os últimos 14. No `crontab -e`:
+
+```
+0 3 * * * /caminho/auau-abrigo/deploy/backup.sh >> ~/backup-auau.log 2>&1
+```
+
+> [!TIP]
+> Backup no mesmo disco da VPS não salva de disco queimado — de vez em quando baixe um `.tar.gz` pro seu PC (`scp`).
+
+**Útil:** `pm2 logs auau-abrigo` · `pm2 monit` · `pm2 restart auau-abrigo`
+
+Em produção os pets de exemplo **não** são criados, e `data/` nunca é tocada pelo `git pull`.
 
 ## 🗺️ Telas
 
@@ -136,6 +163,10 @@ Em produção os pets de exemplo **não** são criados.
 ## 🧱 Estrutura
 
 ```
+deploy/
+├── Caddyfile             # bloco do proxy reverso com HTTPS
+└── backup.sh             # backup diário de data/ (cron)
+ecosystem.config.cjs      # PM2 na VPS
 server/
 ├── index.ts              # rotas (Elysia) + fotos + front em produção
 ├── db.ts                 # SQLite: schema, formato público/admin, pets de exemplo
