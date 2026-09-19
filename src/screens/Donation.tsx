@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, CircleAlert, Copy, MessageCircle, QrCode } from 'lucide-react'
-import { haptic, useToast } from '../components/ui'
+import { SupportNote, haptic, useToast } from '../components/ui'
 import { DONATION_PRESETS, SHELTER, formatBRL } from '../data/mock'
 import { PIX_ENABLED, createPixCharge, type PixCharge } from '../lib/pix'
 import { useApp } from '../state/AppState'
@@ -230,6 +230,7 @@ export default function Donation() {
         <span className="card-body" style={{ color: 'var(--ink-soft)' }}>
           Numero: {SHELTER.whatsapp}
         </span>
+        <SupportNote />
       </section>
 
       <button className="btn btn--blue" onClick={() => navigate('/enviar-comprovante')} disabled={!amount}>

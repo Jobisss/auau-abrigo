@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ExternalLink, MessageCircle } from 'lucide-react'
+import { SupportNote } from '../components/ui'
 import { SHELTER, formatBRL, waLink } from '../data/mock'
 import { formatAge } from '../lib/age'
 import { useApp } from '../state/AppState'
@@ -34,6 +35,10 @@ export default function SendReceipt() {
       <section className="card card--teal">
         <span className="label">Abrir link externo</span>
         <span className="big-link">wa.me/{SHELTER.whatsapp}</span>
+        <span className="card-body" style={{ color: 'var(--ink-soft)' }}>
+          Numero: {SHELTER.whatsapp}
+        </span>
+        <SupportNote />
       </section>
 
       <a className="btn btn--blue" href={waLink(message)} target="_blank" rel="noreferrer" onClick={() => setOpened(true)}>

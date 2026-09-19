@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, CircleAlert, CircleCheck, Ellipsis, Heart, MessageCircle, PawPrint, Trash2, X } from 'lucide-react'
+import { ArrowLeft, CircleAlert, CircleCheck, Ellipsis, Heart, Info, MessageCircle, PawPrint, Trash2, X } from 'lucide-react'
 import { waLink } from '../data/mock'
 
 /** Vibração curtinha em celulares que suportam (Android). */
@@ -85,6 +85,22 @@ export function SupportMenu({ dark = false }: { dark?: boolean }) {
         </a>
       )}
     </div>
+  )
+}
+
+/**
+ * Aviso junto do número do WhatsApp: o app é independente do abrigo,
+ * então dúvidas vão pro suporte — não pro Instagram nem pra equipe do abrigo.
+ */
+export function SupportNote() {
+  return (
+    <p className="support-note" role="note">
+      <Info size={16} strokeWidth={2.5} aria-hidden="true" />
+      <span>
+        <strong>Importante:</strong> este app e um projeto independente, sem ligacao direta com o abrigo. Duvidas? Fale
+        com o <strong>suporte neste numero</strong> — nao com o Instagram nem com os funcionarios do abrigo.
+      </span>
+    </p>
   )
 }
 

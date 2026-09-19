@@ -539,6 +539,27 @@ a {
     box-shadow var(--t-med) var(--ease-spring);
 }
 
+/* Aviso "app independente — dúvidas no suporte", dentro do card do WhatsApp */
+.support-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border: 2px dashed rgba(26, 43, 74, 0.45);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 18px;
+  text-align: left;
+}
+
+.support-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 .card-title {
   display: flex;
   align-items: center;
