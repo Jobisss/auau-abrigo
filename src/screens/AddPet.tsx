@@ -4,6 +4,7 @@ import { Apple, Camera, CircleAlert, Footprints, HeartHandshake, ImagePlus, Phon
 import { PawPattern, ScreenHeader, haptic } from '../components/ui'
 import { formatAge, parseAge, serializeAge } from '../lib/age'
 import { resizeImage } from '../lib/image'
+import { track } from '../lib/analytics'
 import { useApp } from '../state/AppState'
 
 interface Form {
@@ -108,6 +109,7 @@ export default function AddPet() {
         },
         await resizeImage(photoFile),
       )
+      track('pet_cadastrado')
       navigate('/doacao')
     } catch (err) {
       setSubmitError((err as Error).message)

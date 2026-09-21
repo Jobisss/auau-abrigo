@@ -72,6 +72,7 @@ bun run start   # produção: um processo só serve o front e a API
 | `VITE_PIX_KEY` | Chave PIX **do abrigo** (telefone, e-mail, CPF/CNPJ ou aleatória). Pode ter pontuação: o app converte pro formato que o banco aceita (CPF/CNPJ só números, telefone `+55…`). **Vazia** = o app esconde o QR e orienta a doar pelo WhatsApp |
 | `VITE_PIX_MERCHANT_NAME` | Nome do recebedor no PIX (até 25 caracteres, sem acento) |
 | `VITE_PIX_MERCHANT_CITY` | Cidade do recebedor (até 15 caracteres, sem acento) |
+| `VITE_GA_ID` | **Google Analytics 4**. Sem a variável usa o ID do app (`G-T4K05LH5JX`); outro `G-…` troca; vazio desliga. Só conta no build de produção e ignora o `/admin` |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Login do painel do abrigo (senha com 8+ caracteres). **Vazio** = painel fechado |
 | `PORT` | Porta do servidor em produção (o proxy da VPS aponta pra ela; padrão 3001). Em dev a API fica na 3001 |
 | `DATA_DIR` | Pasta do banco e das fotos (padrão `data/`) |
@@ -153,6 +154,22 @@ Exemplos prontos: [`deploy/nginx.conf`](deploy/nginx.conf) · [`deploy/Caddyfile
 **Útil:** `pm2 logs auau-abrigo` · `pm2 monit` · `pm2 restart auau-abrigo`
 
 Em produção os pets de exemplo **não** são criados, e `data/` nunca é tocada pelo `git pull`.
+
+## 📊 Google Analytics
+
+O app já vem com o ID `G-T4K05LH5JX` — basta fazer o deploy (`bun run build && pm2 restart auau-abrigo`).
+Pra usar outra propriedade, defina `VITE_GA_ID` no `.env` e refaça o build.
+
+Confira em **Relatórios → Tempo real**.
+
+Além das visitas por tela, o app manda estes eventos:
+
+| Evento | Quando |
+| --- | --- |
+| `pet_cadastrado` | Tutor publicou um pet |
+| `pix_copiado` | Copiou o código PIX (com o `valor`) |
+| `comprovante_whatsapp` | Abriu o WhatsApp pra mandar o comprovante |
+| `story_compartilhado` | Compartilhou o story pelo celular |
 
 ## 🗺️ Telas
 

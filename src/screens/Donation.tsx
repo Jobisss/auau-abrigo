@@ -4,6 +4,7 @@ import { Check, CircleAlert, Copy, MessageCircle, QrCode } from 'lucide-react'
 import { SupportNote, haptic, useToast } from '../components/ui'
 import { DONATION_PRESETS, SHELTER, formatBRL } from '../data/mock'
 import { PIX_ENABLED, createPixCharge, type PixCharge } from '../lib/pix'
+import { track } from '../lib/analytics'
 import { useApp } from '../state/AppState'
 
 type Choice = number | 'outro'
@@ -81,6 +82,7 @@ export default function Donation() {
       /* sem permissão de clipboard — segue só o feedback visual */
     }
     haptic()
+    track('pix_copiado', { valor: amount ?? 0 })
     setCopied(true)
     showToast({ message: 'Código PIX copiado! Cole no app do seu banco', tone: 'success' })
   }

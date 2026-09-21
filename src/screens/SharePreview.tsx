@@ -4,6 +4,7 @@ import { Download, PawPrint } from 'lucide-react'
 import { InstagramIcon, ScreenHeader, haptic, useToast } from '../components/ui'
 import { SHELTER } from '../data/mock'
 import { STORY_TEMPLATES, renderStory, type StoryTemplate } from '../lib/story'
+import { track } from '../lib/analytics'
 import { useApp } from '../state/AppState'
 
 /** Story pronto: a imagem e uma URL local pra pré-visualizar. */
@@ -103,6 +104,7 @@ export default function SharePreview() {
     try {
       if (navigator.canShare?.({ files: [story.file] })) {
         await navigator.share({ files: [story.file], text: caption })
+        track('story_compartilhado')
         return
       }
       download()

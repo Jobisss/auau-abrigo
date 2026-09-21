@@ -4,6 +4,7 @@ import { ArrowRight, ExternalLink, MessageCircle } from 'lucide-react'
 import { SupportNote } from '../components/ui'
 import { SHELTER, formatBRL, waLink } from '../data/mock'
 import { formatAge } from '../lib/age'
+import { track } from '../lib/analytics'
 import { useApp } from '../state/AppState'
 
 export default function SendReceipt() {
@@ -41,7 +42,10 @@ export default function SendReceipt() {
         <SupportNote />
       </section>
 
-      <a className="btn btn--blue" href={waLink(message)} target="_blank" rel="noreferrer" onClick={() => setOpened(true)}>
+      <a className="btn btn--blue" href={waLink(message)} target="_blank" rel="noreferrer" onClick={() => {
+          setOpened(true)
+          track('comprovante_whatsapp')
+        }}>
         Abrir WhatsApp
         <ExternalLink size={18} strokeWidth={2.5} className="btn-icon-end" />
       </a>

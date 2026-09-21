@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { trackPageView } from './lib/analytics'
 import { api } from './lib/api'
 import { AppStateProvider, useApp } from './state/AppState'
 import HowItWorks from './screens/HowItWorks'
@@ -31,6 +32,7 @@ export default function App() {
     <AppStateProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <PageViews />
         <ResumeFlow />
         <Routes>
           <Route path="/" element={<HowItWorks />} />
@@ -80,6 +82,15 @@ function ResumeFlow() {
       .catch(() => navigate('/obrigado', { replace: true }))
   }, [pathname, draftPet, draftStep, clearDraft, navigate])
 
+  return null
+}
+
+/** Conta cada tela vista no Google Analytics (SPA não recarrega a página). */
+function PageViews() {
+  const { pathname, search } = useLocation()
+  useEffect(() => {
+    trackPageView(pathname + search)
+  }, [pathname, search])
   return null
 }
 
