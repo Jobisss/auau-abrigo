@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, HandHeart } from 'lucide-react'
-import hero from '../assets/abrigo-hero.jpg'
+import hero from '../assets/abrigo-banner.jpg'
 import { CountUp, InstagramIcon, ScreenHeader } from '../components/ui'
 import { SHELTER } from '../data/mock'
 
@@ -24,8 +24,8 @@ export default function Shelter() {
     <main className="screen cascade">
       <ScreenHeader title="Conheça o abrigo" back="/" />
 
-      <div className="hero-img" role="img" aria-label="Voluntários cuidando de um bichinho no abrigo">
-        <div style={{ backgroundImage: `url(${hero})` }} />
+      <div className="hero-img" role="img" aria-label="Cachorro do abrigo olhando pra câmera">
+        <div style={{ backgroundImage: `url(${hero})`, backgroundPosition: '38% center' }} />
       </div>
 
       <div className="stack" style={{ '--gap': '8px' } as CSSProperties}>
