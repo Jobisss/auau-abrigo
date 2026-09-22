@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { trackPageView } from './lib/analytics'
 import { api } from './lib/api'
+import { ANDROID, IN_APP, openInBrowser } from './lib/inApp'
 import { AppStateProvider, useApp } from './state/AppState'
 import HowItWorks from './screens/HowItWorks'
 import AddPet from './screens/AddPet'
@@ -13,6 +14,10 @@ import Reels from './screens/Reels'
 import SharePreview from './screens/SharePreview'
 import AdminLogin from './screens/admin/AdminLogin'
 import AdminDashboard from './screens/admin/AdminDashboard'
+
+// Link da bio abre no navegador do Instagram: no Android já pula pro navegador de verdade
+// (se o Instagram barrar, a tela de compartilhar ainda tem o botão "Abrir no navegador")
+if (IN_APP && ANDROID && !location.pathname.startsWith('/admin')) openInBrowser()
 
 /**
  * Fluxo do usuário:

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
-import { Download, PawPrint } from 'lucide-react'
+import { Download, ExternalLink, Info, PawPrint } from 'lucide-react'
 import { InstagramIcon, ScreenHeader, haptic, useToast } from '../components/ui'
 import { SHELTER } from '../data/mock'
 import { STORY_TEMPLATES, renderStory, type StoryTemplate } from '../lib/story'
 import { track } from '../lib/analytics'
+import { ANDROID, IN_APP, openInBrowser } from '../lib/inApp'
 import { useApp } from '../state/AppState'
 
 /** Story pronto: a imagem e uma URL local pra pré-visualizar. */
@@ -108,14 +109,13 @@ export default function SharePreview() {
     if (!story) return
     haptic()
     setBusy(true)
-    const android = /Android/i.test(navigator.userAgent)
-    const data: ShareData = android ? { files: [story.file] } : { files: [story.file], text: caption }
+    const data: ShareData = ANDROID ? { files: [story.file] } : { files: [story.file], text: caption }
     try {
       if (navigator.canShare?.(data)) {
-        if (android) navigator.clipboard?.writeText(caption).catch(() => {})
+        if (ANDROID) navigator.clipboard?.writeText(caption).catch(() => {})
         await navigator.share(data)
         track('story_compartilhado')
-        if (android) showToast({ message: 'Legenda copiada! É só colar no post', tone: 'success' })
+        if (ANDROID) showToast({ message: 'Legenda copiada! É só colar no post', tone: 'success' })
         return
       }
       download()
@@ -183,14 +183,40 @@ export default function SharePreview() {
         </>
       )}
 
-      <button className="btn btn--blue" onClick={share} disabled={!story} aria-busy={busy}>
-        <InstagramIcon size={22} />
-        Compartilhar story
-      </button>
-      <button className="btn btn--white" onClick={download} disabled={!story}>
-        <Download size={20} strokeWidth={2.5} />
-        Baixar imagem
-      </button>
+      {IN_APP ? (
+        <>
+          <p className="support-note" role="note">
+            <Info size={16} strokeWidth={2.5} aria-hidden="true" />
+            <span>
+              Você está no <strong>navegador do Instagram</strong>, que não deixa salvar nem compartilhar a imagem.{' '}
+              {ANDROID ? (
+                'Abra no seu navegador pra postar o story.'
+              ) : (
+                <>
+                  Toque em <strong>•••</strong> no canto da tela e escolha <strong>Abrir no navegador externo</strong>.
+                </>
+              )}
+            </span>
+          </p>
+          {ANDROID && (
+            <button className="btn btn--blue" onClick={openInBrowser}>
+              <ExternalLink size={20} strokeWidth={2.5} />
+              Abrir no navegador
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <button className="btn btn--blue" onClick={share} disabled={!story} aria-busy={busy}>
+            <InstagramIcon size={22} />
+            Compartilhar story
+          </button>
+          <button className="btn btn--white" onClick={download} disabled={!story}>
+            <Download size={20} strokeWidth={2.5} />
+            Baixar imagem
+          </button>
+        </>
+      )}
       {toast}
     </main>
   )
