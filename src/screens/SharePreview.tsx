@@ -92,19 +92,30 @@ export default function SharePreview() {
     const a = document.createElement('a')
     a.href = story.preview
     a.download = story.file.name
+    // Samsung Internet e Firefox ignoram o clique num link fora da página
+    document.body.appendChild(a)
     a.click()
+    a.remove()
     showToast({ message: 'Imagem salva! Agora é só postar no seu story', tone: 'success' })
   }
 
-  /** Folha de compartilhamento do celular (Instagram, WhatsApp…). Sem suporte a arquivo, baixa a imagem. */
+  /**
+   * Folha de compartilhamento do celular (Instagram, WhatsApp…). Sem suporte a arquivo, baixa a imagem.
+   * No Android (Samsung principalmente) mandar texto junto com a imagem faz o share falhar ou o
+   * Instagram recusar — lá vai só a imagem e a legenda fica copiada pra colar.
+   */
   async function share() {
     if (!story) return
     haptic()
     setBusy(true)
+    const android = /Android/i.test(navigator.userAgent)
+    const data: ShareData = android ? { files: [story.file] } : { files: [story.file], text: caption }
     try {
-      if (navigator.canShare?.({ files: [story.file] })) {
-        await navigator.share({ files: [story.file], text: caption })
+      if (navigator.canShare?.(data)) {
+        if (android) navigator.clipboard?.writeText(caption).catch(() => {})
+        await navigator.share(data)
         track('story_compartilhado')
+        if (android) showToast({ message: 'Legenda copiada! É só colar no post', tone: 'success' })
         return
       }
       download()
