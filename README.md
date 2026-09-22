@@ -112,7 +112,7 @@ API em **Bun + [Elysia](https://elysiajs.com)**, banco **SQLite** (`bun:sqlite`,
 
 ### Deploy na VPS (PM2)
 
-Precisa de um lugar com **disco persistente** — aqui, uma VPS. (A Vercel não serve: o disco é apagado a cada deploy.) Na VPS: **Bun**, **Node + PM2** (`npm i -g pm2`) e o **proxy com HTTPS** que você já usa (Nginx, Caddy…).
+Precisa de um lugar com **disco persistente** — aqui, uma VPS. (A Vercel não serve: o disco é apagado a cada deploy.) Na VPS: **Bun**, **Node + PM2** (`npm i -g pm2`) e o **Nginx com HTTPS**.
 
 **DNS** — no painel do domínio, aponte o subdomínio pro IP da VPS (`A auau → IP`, ou `A * → IP` pra todos os projetos).
 
@@ -131,7 +131,7 @@ pm2 save && pm2 startup             # volta sozinho se a VPS reiniciar — rode 
 1. **Upload de até 6 MB** liberado (o Nginx bloqueia acima de 1 MB por padrão → erro 413 nas fotos)
 2. **`X-Forwarded-For` com o IP real, substituindo** o que vier do visitante — o limite de tentativas de login usa o primeiro IP desse cabeçalho
 
-Exemplos prontos: [`deploy/nginx.conf`](deploy/nginx.conf) · [`deploy/Caddyfile`](deploy/Caddyfile) (o Caddy já faz os dois sozinho).
+Exemplo pronto: [`deploy/nginx.conf`](deploy/nginx.conf).
 
 > [!IMPORTANT]
 > A porta fica **só** no `.env` (`PORT`). Não coloque `PORT` no `ecosystem.config.cjs`: o que o PM2 passa tem prioridade sobre o `.env`.
@@ -190,7 +190,6 @@ Além das visitas por tela, o app manda estes eventos:
 ```
 deploy/
 ├── nginx.conf            # exemplo de proxy reverso (Nginx)
-├── Caddyfile             # exemplo de proxy reverso (Caddy)
 ├── deploy.sh             # pull + build + pm2 restart
 └── backup.sh             # backup diário de data/ (cron)
 ecosystem.config.cjs      # PM2 na VPS
