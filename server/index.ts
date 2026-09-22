@@ -3,8 +3,19 @@ import { existsSync } from 'node:fs'
 import { extname, join, normalize, sep } from 'node:path'
 import { Elysia, t } from 'elysia'
 import { parseAge, serializeAge } from '../src/lib/age.ts'
-import { SESSION_COOKIE, checkCredentials, endSession, guardLogin, isAdmin, requireAdmin, startSession } from './auth.ts'
-import { DIST_DIR, IS_PROD, PORT, TRUST_PROXY } from './config.ts'
+import {
+  SESSION_COOKIE,
+  checkCredentials,
+  clientIp,
+  endSession,
+  guardLogin,
+  hashToken,
+  isAdmin,
+  rateLimit,
+  requireAdmin,
+  startSession,
+} from './auth.ts'
+import { DIST_DIR, HOST, IS_PROD, PORT } from './config.ts'
 import { PET_STATUSES, db, getPet, newPetId, seedIfEmpty, toAdminPet, toPublicPet, type PetRow } from './db.ts'
 import { HttpError } from './errors.ts'
 import { MAX_IMAGE_BYTES, deleteImage, saveImage, uploadedFile } from './storage.ts'
@@ -20,7 +31,53 @@ function required(value: string, field: string) {
 
 const optional = (value: string | undefined) => value?.trim() || '—'
 
+const limitNewPets = rateLimit(10, 60 * 60_000, 'Muitos cadastros seguidos — tente de novo mais tarde')
+const limitLikes = rateLimit(120, 10 * 60_000, 'Calma! Muitas curtidas seguidas — tente daqui a pouco')
+
+/**
+ * Headers de segurança em todas as respostas. A CSP só libera o próprio site,
+ * as fontes do Google e o Google Analytics — um XSS não consegue carregar script de fora
+ * nem mandar dados pra outro domínio, e ninguém embute o painel num iframe.
+ */
+const SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' https://*.googletagmanager.com",
+    "style-src 'self' https://fonts.googleapis.com",
+    'font-src https://fonts.gstatic.com',
+    "img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com",
+    "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; '),
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  ...(IS_PROD ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}),
+}
+
+/**
+ * Freio extra contra CSRF: requisição que altera dados vinda de outra origem é recusada.
+ * O cookie SameSite=Lax já barra outros sites, mas não outros subdomínios do mesmo domínio.
+ */
+function checkOrigin(request: Request) {
+  if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return
+  const origin = request.headers.get('origin')
+  if (!origin) return
+  let host: string
+  try {
+    host = new URL(origin).host
+  } catch {
+    host = ''
+  }
+  if (host !== request.headers.get('host')) throw new HttpError(403, 'Origem não permitida')
+}
+
 const api = new Elysia({ prefix: '/api' })
+  .onBeforeHandle(({ request }) => checkOrigin(request))
+
   // ---------- público ----------
   .get('/pets', () =>
     db
@@ -41,7 +98,8 @@ const api = new Elysia({ prefix: '/api' })
    */
   .post(
     '/pets',
-    async ({ body, set }) => {
+    async ({ body, request, server, set }) => {
+      limitNewPets(clientIp(request, server))
       const name = required(body.name, 'Nome')
       const parsedAge = parseAge(body.age)
       if (!parsedAge) throw new HttpError(400, 'Idade: use 2 para anos ou 0.6 para 6 meses')
@@ -56,7 +114,7 @@ const api = new Elysia({ prefix: '/api' })
       db.query(`
         INSERT INTO pets (id, name, age, photo, exotic_food, adopted_how, favorite_play, contact, edit_token, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(id, name, age, photo, optional(body.exoticFood), optional(body.adoptedHow), optional(body.favoritePlay), contact, editToken, Date.now())
+      `).run(id, name, age, photo, optional(body.exoticFood), optional(body.adoptedHow), optional(body.favoritePlay), contact, hashToken(editToken), Date.now())
 
       set.status = 201
       return { pet: toPublicPet(getPet(id)!), editToken }
@@ -80,7 +138,7 @@ const api = new Elysia({ prefix: '/api' })
     ({ params, body, headers, set }) => {
       const { changes } = db
         .query("UPDATE pets SET donation = ? WHERE id = ? AND edit_token = ? AND status = 'pendente'")
-        .run(Math.round(body.amount * 100) / 100, params.id, headers['x-edit-token'] ?? '')
+        .run(Math.round(body.amount * 100) / 100, params.id, hashToken(headers['x-edit-token'] ?? ''))
       if (changes === 0) throw new HttpError(403, 'Não foi possível atualizar a doação deste pet')
       set.status = 204
     },
@@ -90,7 +148,8 @@ const api = new Elysia({ prefix: '/api' })
   /** Curtida anônima: o front lembra quem já curtiu (localStorage) e manda liked true/false. */
   .post(
     '/pets/:id/like',
-    ({ params, body }) => {
+    ({ params, body, request, server }) => {
+      limitLikes(clientIp(request, server))
       const row = db
         .query<{ likes: number }, [number, string]>("UPDATE pets SET likes = MAX(0, likes + ?) WHERE id = ? AND status = 'ativo' RETURNING likes")
         .get(body.liked ? 1 : -1, params.id)
@@ -104,8 +163,7 @@ const api = new Elysia({ prefix: '/api' })
   .post(
     '/admin/login',
     ({ body, cookie, request, server, set }) => {
-      const forwarded = TRUST_PROXY ? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() : undefined
-      const guard = guardLogin(forwarded || server?.requestIP(request)?.address || 'desconhecido')
+      const guard = guardLogin(clientIp(request, server))
       if (!checkCredentials(body.email, body.password)) {
         guard.fail()
         throw new HttpError(401, 'E-mail ou senha incorretos')
@@ -150,6 +208,9 @@ const api = new Elysia({ prefix: '/api' })
   )
 
 const app = new Elysia({ serve: { maxRequestBodySize: MAX_IMAGE_BYTES + 256 * 1024 } })
+  .onRequest(({ set }) => {
+    Object.assign(set.headers, SECURITY_HEADERS)
+  })
   .onError(({ code, error, set }) => {
     if (error instanceof HttpError) {
       set.status = error.status
@@ -187,7 +248,13 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_IMAGE_BYTES + 256 * 10
 if (IS_PROD && existsSync(join(DIST_DIR, 'index.html'))) {
   app.get('/*', async ({ path }) => {
     if (path.startsWith('/api/')) throw new HttpError(404, 'Não encontrado')
-    const target = normalize(join(DIST_DIR, decodeURIComponent(path)))
+    let decoded: string
+    try {
+      decoded = decodeURIComponent(path)
+    } catch {
+      throw new HttpError(400, 'Endereço inválido')
+    }
+    const target = normalize(join(DIST_DIR, decoded))
     if (target.startsWith(DIST_DIR + sep) && extname(target)) {
       const file = Bun.file(target)
       if (await file.exists()) {
@@ -201,6 +268,6 @@ if (IS_PROD && existsSync(join(DIST_DIR, 'index.html'))) {
   })
 }
 
-app.listen(PORT, ({ port }) => {
-  console.log(`[api] rodando em http://localhost:${port}`)
+app.listen({ port: PORT, hostname: HOST }, ({ hostname, port }) => {
+  console.log(`[api] rodando em http://${hostname}:${port}`)
 })

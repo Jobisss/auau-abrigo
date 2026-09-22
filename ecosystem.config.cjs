@@ -14,7 +14,7 @@ module.exports = {
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
-        // O Caddy na frente repassa o IP real do visitante
+        // O nginx na frente repassa o IP real do visitante (X-Forwarded-For)
         TRUST_PROXY: 'true',
       },
       max_memory_restart: '300M',

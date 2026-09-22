@@ -47,9 +47,15 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS pets_status_created ON pets (status, created_at DESC);
 
+  -- token = sha256 do valor do cookie (um backup vazado não vira sessão válida)
   CREATE TABLE IF NOT EXISTS sessions (
     token      TEXT PRIMARY KEY,
     expires_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
   );
 `)
 
