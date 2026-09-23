@@ -350,6 +350,12 @@ a {
   --btn-bg: var(--white);
 }
 
+.btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
 .btn--orange {
   --btn-bg: var(--orange);
   --btn-fg: var(--white);

@@ -6,6 +6,7 @@ import { ConfirmDialog, CountUp, useToast } from '../../components/ui'
 import { formatBRL, type AdminPet as Pet, type PetStatus } from '../../data/mock'
 import { formatAge } from '../../lib/age'
 import { ApiError, api } from '../../lib/api'
+import { DEFAULT_THANKS_MESSAGE } from '../../lib/thanks'
 import { useApp } from '../../state/AppState'
 
 const FILTERS: { value: PetStatus; mobile: string; desktop: string }[] = [
@@ -24,7 +25,6 @@ const EMPTY_TEXT: Record<PetStatus, string> = {
 
 /** Tempo da animação de saída do card antes de mudar o estado. */
 const LEAVE_MS = 280
-const DEFAULT_THANKS_MESSAGE = 'Esses doguinhos já ajudaram :)'
 
 const phoneLink = (contact: string) => `https://wa.me/55${contact.replace(/\D/g, '')}`
 const money = (n: number) => formatBRL(Math.round(n)).replace(',00', '')
@@ -226,7 +226,7 @@ export default function AdminDashboard() {
             <Check size={15} strokeWidth={3} />
             {selectable.every((p) => selectedIds.includes(p.id)) ? 'Desmarcar todos' : 'Selecionar todos'}
           </button>
-          <span className="muted">Escolha os doguinhos para a tela de agradecimento</span>
+          <span className="muted">Escolha os pets para a tela de agradecimento</span>
         </div>
       )}
 

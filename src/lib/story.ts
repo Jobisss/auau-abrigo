@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { SHELTER, type Pet } from '../data/mock'
 import { formatAge } from './age'
+import { PETS_PER_THANKS_STORY, thanksMessage } from './thanks'
 
 /**
  * Imagens de story (1080×1920) pra compartilhar, em 3 modelos. Todas levam um QR Code
@@ -56,6 +57,121 @@ export async function renderStory(pet: Pet, template: StoryTemplate, url: string
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Falha ao gerar a imagem'))), 'image/jpeg', 0.92),
   )
+}
+
+/** Montagem 9:16 com até quatro fotos grandes e texto dentro da área segura dos Stories. */
+export async function renderThanksStory(pets: Pet[], message: string, url: string, page = 1, total = 1): Promise<Blob> {
+  if (!pets.length || pets.length > PETS_PER_THANKS_STORY) throw new Error('Selecione de 1 a 4 pets por story')
+  await loadFonts()
+  // Falhar permite tentar de novo; nunca compartilhar silenciosamente uma montagem sem uma foto.
+  const photos = await Promise.all(pets.map((pet) => loadImage(pet.photo)))
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')!
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  ctx.fillStyle = CREAM
+  ctx.fillRect(0, 0, W, H)
+  pawPattern(ctx, 'rgba(35,100,170,0.045)')
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `700 28px ${BODY}`
+  ctx.fillStyle = BLUE
+  ctx.fillText('UMA CORRENTE DE CARINHO', W / 2, 228)
+  const heading = thanksMessage(message)
+  let size = 110
+  let lines: string[] = []
+  do {
+    ctx.font = `${size}px ${HAND}`
+    lines = textLines(ctx, heading, W - 152)
+    if (lines.length * size <= 176) break
+    size -= 2
+  } while (size > 32)
+  ctx.fillStyle = INK
+  ctx.textBaseline = 'middle'
+  lines.forEach((line, index) => ctx.fillText(line, W / 2, 258 + (176 - lines.length * size) / 2 + (index + 0.5) * size))
+
+  const x = 54
+  const y = 466
+  const width = W - x * 2
+  const height = 1052
+  const gap = 22
+  const halfW = (width - gap) / 2
+  const halfH = (height - gap) / 2
+  pets.forEach((pet, index) => {
+    // Três fotos: uma maior em cima e duas embaixo, como na galeria.
+    const columns = pets.length === 1 ? 1 : 2
+    const isThree = pets.length === 3
+    const col = isThree ? Math.max(0, index - 1) : index % columns
+    const row = isThree ? (index === 0 ? 0 : 1) : Math.floor(index / columns)
+    const cardX = x + col * (halfW + gap)
+    const cardY = y + row * (halfH + gap)
+    const cardW = columns === 1 || (isThree && index === 0) ? width : halfW
+    const cardH = pets.length <= 2 ? height : halfH
+    sketchBox(ctx, cardX, cardY, cardW, cardH, 28, WHITE, 4, 5)
+    const photoX = cardX + 12
+    const photoY = cardY + 12
+    const photoW = cardW - 24
+    const photoH = cardH - 76
+    // A foto inteira fica em primeiro plano; o fundo desfocado preenche proporções diferentes.
+    ctx.save()
+    ctx.beginPath()
+    ctx.roundRect(photoX, photoY, photoW, photoH, 18)
+    ctx.clip()
+    ctx.filter = 'blur(22px)'
+    drawCover(ctx, photos[index], photoX - 30, photoY - 30, photoW + 60, photoH + 60)
+    ctx.filter = 'none'
+    const scale = Math.min(photoW / photos[index].width, photoH / photos[index].height)
+    const imageW = photos[index].width * scale
+    const imageH = photos[index].height * scale
+    ctx.drawImage(photos[index], photoX + (photoW - imageW) / 2, photoY + (photoH - imageH) / 2, imageW, imageH)
+    ctx.restore()
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = INK
+    ctx.font = `700 ${fitFont(ctx, pet.name, BODY, '700', 38, 22, cardW - 100)}px ${BODY}`
+    ctx.fillText(pet.name, cardX + 24, cardY + cardH - 32, cardW - 100)
+    heart(ctx, cardX + cardW - 38, cardY + cardH - 32, 23, { fill: ORANGE })
+  })
+
+  // Rodapé compacto para deixar a maior parte da área útil para as fotos.
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = BLUE
+  ctx.font = `68px ${HAND}`
+  ctx.fillText('Faça a sua parte também!', 60, 1592, 736)
+  ctx.fillStyle = INK_SOFT
+  ctx.font = `400 28px ${BODY}`
+  ctx.fillText(`${SHELTER.name} · ${new URL(url).host}`, 60, 1640, 730)
+  await qrSticker(ctx, url, 942, 1612, 138, 0)
+  if (total > 1) {
+    ctx.fillStyle = INK_SOFT
+    ctx.textAlign = 'center'
+    ctx.font = `700 24px ${BODY}`
+    ctx.fillText(`${page} / ${total}`, W / 2, 1714)
+  }
+  footerHandle(ctx, INK_SOFT)
+  return new Promise((resolve, reject) => canvas.toBlob(
+    (blob) => blob ? resolve(blob) : reject(new Error('Falha ao gerar a imagem')), 'image/jpeg', 0.94,
+  ))
+}
+
+/** Quebra inclusive palavras longas, para mensagens personalizadas nunca vazarem sobre as fotos. */
+function textLines(ctx: Ctx, text: string, maxWidth: number) {
+  const lines: string[] = []
+  let line = ''
+  for (const character of text.replace(/\s+/g, ' ')) {
+    if (ctx.measureText(line + character).width > maxWidth && line) {
+      const space = line.lastIndexOf(' ')
+      lines.push(space > 0 ? line.slice(0, space) : line)
+      line = space > 0 ? line.slice(space + 1) : ''
+    }
+    line += character
+  }
+  if (line.trim()) lines.push(line.trim())
+  return lines
 }
 
 // =====================================================================

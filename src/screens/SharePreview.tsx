@@ -1,30 +1,21 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
-import { Download, ExternalLink, Info, PawPrint } from 'lucide-react'
-import { InstagramIcon, ScreenHeader, haptic, useToast } from '../components/ui'
+import { PawPrint } from 'lucide-react'
+import { ScreenHeader, haptic } from '../components/ui'
+import { StoryShareActions, type ShareableStory } from '../components/StoryShareActions'
 import { SHELTER } from '../data/mock'
 import { STORY_TEMPLATES, renderStory, type StoryTemplate } from '../lib/story'
-import { track } from '../lib/analytics'
-import { ANDROID, IN_APP, openInBrowser } from '../lib/inApp'
 import { useApp } from '../state/AppState'
 
-/** Story pronto: a imagem e uma URL local pra pré-visualizar. */
-interface Story {
-  file: File
-  preview: string
-}
-
-type Stories = Partial<Record<StoryTemplate, Story | 'erro'>>
+type Stories = Partial<Record<StoryTemplate, ShareableStory | 'erro'>>
 
 export default function SharePreview() {
   const { petId } = useParams()
   const { pets, feedStatus, reloadFeed } = useApp()
   const pet = pets.find((p) => p.id === petId)
   useEffect(reloadFeed, [reloadFeed])
-  const [toast, showToast] = useToast()
   const [stories, setStories] = useState<Stories>({})
   const [selected, setSelected] = useState<StoryTemplate>('foto')
-  const [busy, setBusy] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
 
   // Gera os 3 modelos assim que o pet chega da API — e só de novo se mudar algo que aparece neles
@@ -88,44 +79,6 @@ export default function SharePreview() {
     if (best !== selected) setSelected(best)
   }
 
-  function download() {
-    if (!story) return
-    const a = document.createElement('a')
-    a.href = story.preview
-    a.download = story.file.name
-    // Samsung Internet e Firefox ignoram o clique num link fora da página
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    showToast({ message: 'Imagem salva! Agora é só postar no seu story', tone: 'success' })
-  }
-
-  /**
-   * Folha de compartilhamento do celular (Instagram, WhatsApp…). Sem suporte a arquivo, baixa a imagem.
-   * No Android (Samsung principalmente) mandar texto junto com a imagem faz o share falhar ou o
-   * Instagram recusar — lá vai só a imagem e a legenda fica copiada pra colar.
-   */
-  async function share() {
-    if (!story) return
-    haptic()
-    setBusy(true)
-    const data: ShareData = ANDROID ? { files: [story.file] } : { files: [story.file], text: caption }
-    try {
-      if (navigator.canShare?.(data)) {
-        if (ANDROID) navigator.clipboard?.writeText(caption).catch(() => {})
-        await navigator.share(data)
-        track('story_compartilhado')
-        if (ANDROID) showToast({ message: 'Legenda copiada! É só colar no post', tone: 'success' })
-        return
-      }
-      download()
-    } catch (e) {
-      if ((e as Error).name !== 'AbortError') download()
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const notFound = !pet && feedStatus !== 'loading'
 
   return (
@@ -183,41 +136,7 @@ export default function SharePreview() {
         </>
       )}
 
-      {IN_APP ? (
-        <>
-          <p className="support-note" role="note">
-            <Info size={16} strokeWidth={2.5} aria-hidden="true" />
-            <span>
-              Você está no <strong>navegador do Instagram</strong>, que não deixa salvar nem compartilhar a imagem.{' '}
-              {ANDROID ? (
-                'Abra no seu navegador pra postar o story.'
-              ) : (
-                <>
-                  Toque em <strong>•••</strong> no canto da tela e escolha <strong>Abrir no navegador externo</strong>.
-                </>
-              )}
-            </span>
-          </p>
-          {ANDROID && (
-            <button className="btn btn--blue" onClick={openInBrowser}>
-              <ExternalLink size={20} strokeWidth={2.5} />
-              Abrir no navegador
-            </button>
-          )}
-        </>
-      ) : (
-        <>
-          <button className="btn btn--blue" onClick={share} disabled={!story} aria-busy={busy}>
-            <InstagramIcon size={22} />
-            Compartilhar story
-          </button>
-          <button className="btn btn--white" onClick={download} disabled={!story}>
-            <Download size={20} strokeWidth={2.5} />
-            Baixar imagem
-          </button>
-        </>
-      )}
-      {toast}
+      <StoryShareActions story={story} caption={caption} />
     </main>
   )
 }
