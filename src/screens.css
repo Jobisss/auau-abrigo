@@ -1121,6 +1121,320 @@ body:has(.reels) {
   box-shadow: none;
 }
 
+.admin-selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--cream-deep);
+  border: 2px dashed rgba(26, 43, 74, 0.25);
+}
+
+.admin-selection-toolbar .muted {
+  font-size: 12px;
+}
+
+.admin-select-box {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: var(--stroke-thin);
+  border-radius: 7px;
+  background: var(--white);
+  display: grid;
+  place-items: center;
+  color: var(--white);
+  transition: background-color 0.2s ease, transform var(--t-med) var(--ease-spring);
+}
+
+.admin-select-box.is-selected {
+  background: var(--blue);
+}
+
+.admin-photo-button,
+.admin-avatar-button {
+  padding: 0;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.admin-photo-button img,
+.admin-avatar-button img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.admin-avatar-button {
+  color: var(--ink);
+}
+
+.admin-view-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-thanks-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: var(--stroke);
+  border-radius: var(--r-lg);
+  background: var(--yellow);
+  box-shadow: var(--shadow-lg);
+  animation: rise 0.45s var(--ease-out) both;
+}
+
+.admin-thanks-builder-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-thanks-builder-heading .h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.admin-thanks-builder-heading .muted {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.admin-feature-icon {
+  width: 40px;
+  height: 40px;
+  border: var(--stroke-thin);
+  border-radius: 50%;
+  background: var(--white);
+  display: grid;
+  place-items: center;
+}
+
+.admin-thanks-pets {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+}
+
+.admin-thanks-pet {
+  position: relative;
+  flex: 0 0 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-thanks-pet img,
+.admin-thanks-pet > svg {
+  width: 58px;
+  height: 58px;
+  border: var(--stroke-thin);
+  border-radius: 16px;
+  background: var(--teal);
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+}
+
+.admin-thanks-pet-remove {
+  position: absolute;
+  top: -5px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--white);
+  display: grid;
+  place-items: center;
+}
+
+.admin-thanks-input {
+  min-height: 66px;
+  resize: vertical;
+  background: var(--white);
+}
+
+.admin-thanks-actions {
+  flex-wrap: wrap;
+}
+
+.photo-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(26, 43, 74, 0.64);
+  backdrop-filter: blur(5px);
+  animation: fade-in 0.2s ease both;
+}
+
+.photo-dialog {
+  width: 100%;
+  max-width: 680px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 16px;
+  border: var(--stroke);
+  border-radius: var(--r-lg);
+  background: var(--cream);
+  box-shadow: var(--shadow-lg);
+  animation: dialog-in 0.35s var(--ease-spring) both;
+}
+
+.photo-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.photo-dialog-header .h2 {
+  margin: 0 0 7px;
+}
+
+.photo-dialog-media {
+  min-height: 180px;
+  max-height: 66dvh;
+  border: var(--stroke-thin);
+  border-radius: var(--r-md);
+  background: var(--cream-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  overflow: hidden;
+}
+
+.photo-dialog-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 66dvh;
+  object-fit: contain;
+}
+
+.photo-dialog-caption {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+/* ============ Tela de thanks personalizada ============ */
+.thanks-custom {
+  gap: 16px;
+  padding-top: 36px;
+}
+
+.thanks-custom-kicker {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--orange);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.thanks-custom-title {
+  margin: 0;
+  font-size: clamp(38px, 10vw, 58px);
+  line-height: 1;
+}
+
+.thanks-custom-lead {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.thanks-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.thanks-photo-card {
+  position: relative;
+  aspect-ratio: 1;
+  margin: 0;
+  overflow: hidden;
+  border: var(--stroke-thin);
+  border-radius: var(--r-md);
+  background: var(--teal);
+  box-shadow: var(--shadow-sm);
+}
+
+.thanks-photo-card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.thanks-photo-card figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18px 7px 6px;
+  color: var(--white);
+  background: linear-gradient(transparent, rgba(26, 43, 74, 0.85));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.thanks-custom-empty,
+.thanks-custom-loading {
+  grid-column: 1 / -1;
+  padding: 24px 12px;
+  text-align: center;
+}
+
+.thanks-custom-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border: 2px dashed rgba(26, 43, 74, 0.25);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.thanks-custom-cta {
+  padding: 18px;
+  border: var(--stroke);
+  border-radius: var(--r-lg);
+  background: var(--yellow);
+  box-shadow: var(--shadow);
+}
+
+.thanks-custom-cta .h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.thanks-custom-cta p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
 .admin-wa {
   width: 28px;
   height: 28px;

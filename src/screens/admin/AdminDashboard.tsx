@@ -1,6 +1,7 @@
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { LogOut, MessageCircle, PawPrint } from 'lucide-react'
+import { Check, Eye, ExternalLink, ImagePlus, LogOut, MessageCircle, PawPrint, Sparkles, X } from 'lucide-react'
 import { ConfirmDialog, CountUp, useToast } from '../../components/ui'
 import { formatBRL, type AdminPet as Pet, type PetStatus } from '../../data/mock'
 import { formatAge } from '../../lib/age'
@@ -23,6 +24,7 @@ const EMPTY_TEXT: Record<PetStatus, string> = {
 
 /** Tempo da animação de saída do card antes de mudar o estado. */
 const LEAVE_MS = 280
+const DEFAULT_THANKS_MESSAGE = 'Esses doguinhos já ajudaram :)'
 
 const phoneLink = (contact: string) => `https://wa.me/55${contact.replace(/\D/g, '')}`
 const money = (n: number) => formatBRL(Math.round(n)).replace(',00', '')
@@ -78,6 +80,9 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState<PetStatus>('pendente')
   const [leaving, setLeaving] = useState<string[]>([])
   const [confirming, setConfirming] = useState<Pet | null>(null)
+  const [previewing, setPreviewing] = useState<Pet | null>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [thanksMessage, setThanksMessage] = useState(DEFAULT_THANKS_MESSAGE)
   const [toast, showToast] = useToast()
   const closeConfirm = useCallback(() => setConfirming(null), [])
   const { pets, loading, setStatus, removePet } = useAdminPets(isAdmin === true, (err) => {
@@ -94,6 +99,22 @@ export default function AdminDashboard() {
   const raised = sum(pets.filter((p) => p.status !== 'pendente'))
   const pending = sum(pets.filter((p) => p.status === 'pendente'))
   const list = pets.filter((p) => p.status === filter)
+  const selectable = list.filter((p) => p.status === 'ativo')
+  const selected = pets.filter((p) => p.status === 'ativo' && selectedIds.includes(p.id))
+
+  function toggleSelected(id: string) {
+    setSelectedIds((ids) => (ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]))
+  }
+
+  function toggleAllVisible() {
+    const allSelected = selectable.length > 0 && selectable.every((p) => selectedIds.includes(p.id))
+    setSelectedIds((ids) => (allSelected ? ids.filter((id) => !selectable.some((p) => p.id === id)) : [...new Set([...ids, ...selectable.map((p) => p.id)])]))
+  }
+
+  function thanksUrl() {
+    const message = thanksMessage.trim() || DEFAULT_THANKS_MESSAGE
+    return `/obrigado?pets=${encodeURIComponent(selected.map((p) => p.id).join(','))}&mensagem=${encodeURIComponent(message)}`
+  }
 
   /** Anima o card saindo e só então aplica a mudança. */
   function animateOut(p: Pet, apply: () => void) {
@@ -116,6 +137,7 @@ export default function AdminDashboard() {
       }),
     hide: (p) =>
       animateOut(p, () => {
+        setSelectedIds((ids) => ids.filter((id) => id !== p.id))
         setStatus(p.id, 'oculto')
         showToast({
           message: `${p.name} ocultado`,
@@ -198,6 +220,16 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {filter === 'ativo' && selectable.length > 0 && (
+        <div className="admin-selection-toolbar">
+          <button className="pill pill--sm" aria-pressed={selectable.every((p) => selectedIds.includes(p.id))} onClick={toggleAllVisible}>
+            <Check size={15} strokeWidth={3} />
+            {selectable.every((p) => selectedIds.includes(p.id)) ? 'Desmarcar todos' : 'Selecionar todos'}
+          </button>
+          <span className="muted">Escolha os doguinhos para a tela de agradecimento</span>
+        </div>
+      )}
+
       {!loading && list.length === 0 && (
         <div key={filter} className="admin-empty">
           <PawPrint size={32} />
@@ -211,7 +243,9 @@ export default function AdminDashboard() {
           <article key={p.id} className={`admin-card ${leavingClass(p)}`}>
             <span className={`pill pill--sm status status--${p.status}`}>{STATUS_LABEL[p.status]}</span>
             <div className="row" style={{ '--gap': '12px', alignItems: 'flex-start' } as CSSProperties}>
-              <div className="admin-photo" style={{ backgroundImage: p.photo ? `url(${p.photo})` : undefined }} />
+              <button className="admin-photo admin-photo-button" onClick={() => setPreviewing(p)} aria-label={`Ver foto de ${p.name}`}>
+                {p.photo ? <img src={p.photo} alt="" /> : <PawPrint size={24} />}
+              </button>
               <div className="stack grow" style={{ '--gap': '4px' } as CSSProperties}>
                 <strong>
                   {p.name}, {formatAge(p.age)}
@@ -220,7 +254,7 @@ export default function AdminDashboard() {
                 <span className="admin-value">Doação: {formatBRL(p.donation)}</span>
               </div>
             </div>
-            <ActionButtons pet={p} act={act} />
+            <ActionButtons pet={p} act={act} onPreview={setPreviewing} selected={selectedIds.includes(p.id)} onToggleSelected={toggleSelected} />
           </article>
         ))}
       </div>
@@ -238,9 +272,19 @@ export default function AdminDashboard() {
           {list.map((p) => (
             <div key={p.id} className={`admin-tr ${leavingClass(p)}`}>
               <span className="row" style={{ '--gap': '10px' } as CSSProperties}>
-                <span className="admin-avatar" style={{ backgroundImage: p.photo ? `url(${p.photo})` : undefined }}>
-                  {!p.photo && <PawPrint size={16} />}
-                </span>
+                {p.status === 'ativo' && (
+                  <button
+                    className={`admin-select-box ${selectedIds.includes(p.id) ? 'is-selected' : ''}`}
+                    aria-label={`${selectedIds.includes(p.id) ? 'Remover' : 'Adicionar'} ${p.name} da tela de agradecimento`}
+                    aria-pressed={selectedIds.includes(p.id)}
+                    onClick={() => toggleSelected(p.id)}
+                  >
+                    {selectedIds.includes(p.id) && <Check size={14} strokeWidth={3} />}
+                  </button>
+                )}
+                <button className="admin-avatar admin-avatar-button" onClick={() => setPreviewing(p)} aria-label={`Ver foto de ${p.name}`}>
+                  {p.photo ? <img src={p.photo} alt="" /> : <PawPrint size={16} />}
+                </button>
                 <strong>
                   {p.name}, {formatAge(p.age)}
                 </strong>
@@ -252,10 +296,49 @@ export default function AdminDashboard() {
                   {STATUS_LABEL[p.status]}
                 </span>
               </span>
-              <ActionButtons pet={p} act={act} />
+              <ActionButtons pet={p} act={act} onPreview={setPreviewing} selected={selectedIds.includes(p.id)} onToggleSelected={toggleSelected} />
             </div>
           ))}
         </div>
+      )}
+
+      {selected.length > 0 && (
+        <section className="admin-thanks-builder" aria-labelledby="thanks-builder-title">
+          <div className="admin-thanks-builder-heading">
+            <span className="admin-feature-icon"><Sparkles size={20} strokeWidth={2.5} /></span>
+            <div>
+              <h2 id="thanks-builder-title" className="h2">Montar tela de agradecimento</h2>
+              <p className="muted">{selected.length} {selected.length === 1 ? 'pet selecionado' : 'pets selecionados'}</p>
+            </div>
+          </div>
+          <div className="admin-thanks-pets" aria-label="Pets selecionados">
+            {selected.map((p) => (
+              <button key={p.id} className="admin-thanks-pet" onClick={() => toggleSelected(p.id)} aria-label={`Remover ${p.name}`}>
+                {p.photo ? <img src={p.photo} alt={p.name} /> : <PawPrint size={18} />}
+                <span>{p.name}</span>
+                <span className="admin-thanks-pet-remove"><X size={12} /></span>
+              </button>
+            ))}
+          </div>
+          <label className="stack" style={{ '--gap': '6px' } as CSSProperties}>
+            <span className="label">Mensagem da tela</span>
+            <textarea
+              className="input admin-thanks-input"
+              value={thanksMessage}
+              maxLength={120}
+              onChange={(e) => setThanksMessage(e.target.value)}
+              placeholder={DEFAULT_THANKS_MESSAGE}
+              rows={2}
+            />
+          </label>
+          <div className="row admin-thanks-actions" style={{ '--gap': '8px' } as CSSProperties}>
+            <a className="btn btn--blue" href={thanksUrl()} target="_blank" rel="noreferrer">
+              <ExternalLink size={19} strokeWidth={2.5} />
+              Abrir tela personalizada
+            </a>
+            <button className="pill pill--sm" onClick={() => setSelectedIds([])}>Limpar seleção</button>
+          </div>
+        </section>
       )}
 
       <ConfirmDialog
@@ -266,14 +349,41 @@ export default function AdminDashboard() {
         onConfirm={confirmRemove}
         onCancel={closeConfirm}
       />
+      <PhotoLightbox pet={previewing} onClose={() => setPreviewing(null)} />
       {toast}
     </main>
   )
 }
 
-function ActionButtons({ pet, act }: { pet: Pet; act: Actions }) {
+function ActionButtons({
+  pet,
+  act,
+  onPreview,
+  selected,
+  onToggleSelected,
+}: {
+  pet: Pet
+  act: Actions
+  onPreview: (pet: Pet) => void
+  selected: boolean
+  onToggleSelected: (id: string) => void
+}) {
   return (
     <div className="row admin-actions" style={{ '--gap': '6px' } as CSSProperties}>
+      {pet.status === 'ativo' && (
+        <button
+          className={`admin-select-box only-mobile ${selected ? 'is-selected' : ''}`}
+          aria-label={`${selected ? 'Remover' : 'Adicionar'} ${pet.name} da tela de agradecimento`}
+          aria-pressed={selected}
+          onClick={() => onToggleSelected(pet.id)}
+        >
+          {selected && <Check size={14} strokeWidth={3} />}
+        </button>
+      )}
+      <button className="pill pill--sm pill--white admin-view-photo" onClick={() => onPreview(pet)}>
+        <Eye size={15} strokeWidth={2.5} />
+        Ver foto
+      </button>
       {pet.status !== 'ativo' && (
         <button className="pill pill--sm pill--blue" onClick={() => act.approve(pet)}>
           Aprovar
@@ -297,5 +407,40 @@ function ActionButtons({ pet, act }: { pet: Pet; act: Actions }) {
         <MessageCircle size={14} strokeWidth={2.5} />
       </a>
     </div>
+  )
+}
+
+function PhotoLightbox({ pet, onClose }: { pet: Pet | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!pet) return
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+    }
+  }, [pet, onClose])
+
+  if (!pet) return null
+
+  return createPortal(
+    <div className="photo-dialog-backdrop" onClick={onClose}>
+      <div className="photo-dialog" role="dialog" aria-modal="true" aria-labelledby="photo-dialog-title" onClick={(event) => event.stopPropagation()}>
+        <header className="photo-dialog-header">
+          <div>
+            <h2 id="photo-dialog-title" className="h2">Foto de {pet.name}</h2>
+            <span className={`pill pill--sm status status--${pet.status}`}>{STATUS_LABEL[pet.status]}</span>
+          </div>
+          <button className="icon-btn" aria-label="Fechar foto" onClick={onClose}><X size={22} strokeWidth={2.5} /></button>
+        </header>
+        <div className="photo-dialog-media">
+          {pet.photo ? <img src={pet.photo} alt={`Foto de ${pet.name}`} /> : <><ImagePlus size={42} /><span>Este pet não tem foto</span></>}
+        </div>
+        <p className="muted photo-dialog-caption">{pet.name}, {formatAge(pet.age)} · Doação: {formatBRL(pet.donation)}</p>
+      </div>
+    </div>,
+    document.body,
   )
 }

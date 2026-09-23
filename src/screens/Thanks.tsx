@@ -1,17 +1,68 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { LifeBuoy, Play } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowRight, Heart, LifeBuoy, PawPrint, Play } from 'lucide-react'
 import { Confetti } from '../components/ui'
 import { SHELTER } from '../data/mock'
 import { useApp } from '../state/AppState'
 
 export default function Thanks() {
   const navigate = useNavigate()
-  const { draftPet, markSent } = useApp()
+  const [searchParams] = useSearchParams()
+  const customIds = (searchParams.get('pets') ?? '').split(',').filter(Boolean)
+  const customMessage = searchParams.get('mensagem')?.trim() || 'Esses doguinhos já ajudaram :)'
+  const isCustom = customIds.length > 0
+  const { draftPet, markSent, pets, feedStatus, reloadFeed } = useApp()
   const name = draftPet?.name ?? 'seu pet'
 
   // Daqui em diante, quem reabrir o app cai nesta tela (e não mais no PIX)
-  useEffect(markSent, [markSent])
+  useEffect(() => {
+    if (isCustom) {
+      reloadFeed()
+      return
+    }
+    markSent()
+  }, [isCustom, markSent, reloadFeed])
+
+  if (isCustom) {
+    const selectedPets = customIds.map((id) => pets.find((pet) => pet.id === id)).filter((pet): pet is (typeof pets)[number] => Boolean(pet))
+    return (
+      <main className="screen thanks-custom cascade">
+        <Confetti />
+        <span className="thanks-custom-kicker"><Heart size={16} fill="currentColor" /> Obrigado por ajudar o abrigo</span>
+        <h1 className="title-hand thanks-custom-title">{customMessage}</h1>
+        <p className="muted thanks-custom-lead">Eles já fizeram a parte deles. Agora você também pode transformar uma doação em cuidado.</p>
+
+        <section className="thanks-photo-grid" aria-label="Pets que já ajudaram">
+          {feedStatus === 'loading' && <p className="muted thanks-custom-loading">Carregando as fotos…</p>}
+          {feedStatus !== 'loading' && selectedPets.map((pet) => (
+            <figure key={pet.id} className="thanks-photo-card">
+              {pet.photo ? <img src={pet.photo} alt={pet.name} /> : <PawPrint size={32} />}
+              <figcaption>{pet.name}</figcaption>
+            </figure>
+          ))}
+          {feedStatus !== 'loading' && selectedPets.length === 0 && (
+            <div className="thanks-custom-empty">
+              <PawPrint size={28} />
+              <span>Essas fotos não estão disponíveis no momento.</span>
+            </div>
+          )}
+        </section>
+
+        <div className="thanks-custom-cta">
+          <h2 className="h2">Faça a sua parte também!</h2>
+          <p className="muted">Cadastre seu pet e ajude o abrigo a continuar cuidando de mais patinhas.</p>
+          <button className="btn btn--blue" onClick={() => navigate('/adicionar')}>
+            <ArrowRight size={20} strokeWidth={2.5} />
+            Quero ajudar
+          </button>
+        </div>
+        <button className="btn btn--white" onClick={() => navigate('/reels')}>
+          <Play size={20} strokeWidth={2.5} />
+          Ver todos os pets
+        </button>
+      </main>
+    )
+  }
 
   return (
     <main className="screen cascade" style={{ gap: 20, paddingTop: 40 }}>
