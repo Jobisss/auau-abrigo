@@ -1887,3 +1887,205 @@ body:has(.reels) {
     animation-name: fade-out;
   }
 }
+
+/* ============ Vídeo de agradecimento ============ */
+.video-screen {
+  gap: 22px;
+}
+
+.video-lead {
+  font-size: 15px;
+  line-height: 22px;
+  margin: 0;
+}
+
+.video-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.video-section-head .muted {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Turma disponível: fotinhas quadradas que ligam/desligam no toque */
+.video-pet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 10px;
+}
+
+.video-pet {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: var(--stroke-thin);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--cream-deep);
+  cursor: pointer;
+  transition:
+    scale var(--t-press) var(--ease-spring),
+    box-shadow var(--t-med) var(--ease-out),
+    opacity var(--t-med) ease;
+}
+
+.video-pet img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.85;
+}
+
+.video-pet.is-selected {
+  border: 3px solid var(--blue);
+  box-shadow: var(--shadow-sm);
+  scale: 1.03;
+}
+
+.video-pet.is-selected img {
+  opacity: 1;
+}
+
+.video-pet:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.video-pet-name {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 10px 4px 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--white);
+  background: linear-gradient(to top, rgba(26, 43, 74, 0.88), transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Número = ordem em que o pet entra no vídeo */
+.video-pet-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.video-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 18px;
+  text-align: center;
+  border: 2px dashed rgba(35, 100, 170, 0.35);
+  border-radius: var(--r-lg);
+  color: var(--ink-soft);
+}
+
+.video-empty p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.video-format {
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 10px;
+  line-height: 1.15;
+}
+
+.video-format-hint {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.video-studio {
+  padding: 16px;
+  border: var(--stroke-thin);
+  border-radius: var(--r-lg);
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.video-stage,
+.video-result {
+  width: min(100%, 260px);
+  align-self: center;
+  border: var(--stroke-thin);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--cream-deep);
+}
+
+.video-stage[data-format='reels'],
+.video-result[data-format='reels'] {
+  aspect-ratio: 9 / 16;
+}
+
+.video-stage[data-format='feed'],
+.video-result[data-format='feed'] {
+  aspect-ratio: 4 / 5;
+}
+
+.video-canvas,
+.video-result video {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.video-duration {
+  text-align: center;
+}
+
+.video-progress {
+  height: 12px;
+  border: var(--stroke-thin);
+  border-radius: var(--r-pill);
+  background: var(--cream-deep);
+  overflow: hidden;
+}
+
+.video-progress span {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.2s ease-out;
+}
+
+.video-ready {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (min-width: 700px) {
+  .video-stage,
+  .video-result {
+    width: min(100%, 320px);
+  }
+}

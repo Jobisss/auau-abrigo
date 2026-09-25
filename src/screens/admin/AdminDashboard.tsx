@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Check, Eye, ExternalLink, ImagePlus, LogOut, MessageCircle, PawPrint, Sparkles, X } from 'lucide-react'
+import { Check, Clapperboard, Eye, ExternalLink, ImagePlus, LogOut, MessageCircle, PawPrint, Sparkles, X } from 'lucide-react'
 import { ConfirmDialog, CountUp, useToast } from '../../components/ui'
 import { formatBRL, type AdminPet as Pet, type PetStatus } from '../../data/mock'
 import { formatAge } from '../../lib/age'
@@ -111,9 +111,9 @@ export default function AdminDashboard() {
     setSelectedIds((ids) => (allSelected ? ids.filter((id) => !selectable.some((p) => p.id === id)) : [...new Set([...ids, ...selectable.map((p) => p.id)])]))
   }
 
-  function thanksUrl() {
+  function thanksUrl(path = '/obrigado') {
     const message = thanksMessage.trim() || DEFAULT_THANKS_MESSAGE
-    return `/obrigado?pets=${encodeURIComponent(selected.map((p) => p.id).join(','))}&mensagem=${encodeURIComponent(message)}`
+    return `${path}?pets=${encodeURIComponent(selected.map((p) => p.id).join(','))}&mensagem=${encodeURIComponent(message)}`
   }
 
   /** Anima o card saindo e só então aplica a mudança. */
@@ -335,6 +335,10 @@ export default function AdminDashboard() {
             <a className="btn btn--blue" href={thanksUrl()} target="_blank" rel="noreferrer">
               <ExternalLink size={19} strokeWidth={2.5} />
               Abrir tela personalizada
+            </a>
+            <a className="btn btn--yellow" href={thanksUrl('/video')} target="_blank" rel="noreferrer">
+              <Clapperboard size={19} strokeWidth={2.5} />
+              Montar vídeo do post
             </a>
             <button className="pill pill--sm" onClick={() => setSelectedIds([])}>Limpar seleção</button>
           </div>

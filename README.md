@@ -44,6 +44,7 @@ flowchart LR
 | 💸 **Doação via PIX** | R$ 5, 10, 25 ou outro valor — QR Code e copia-e-cola gerados na hora com `pix-utils` |
 | 💬 **Comprovante no WhatsApp** | Mensagem já preenchida com o valor e o nome do pet |
 | 📲 **Compartilhar** | Folha de compartilhamento nativa do celular (Stories, WhatsApp…) com a foto do pet |
+| 🎥 **Vídeo de agradecimento** | Escolhe os pets, vê a animação rodando e exporta um MP4 (9:16 ou 4:5) pronto pro post no Instagram |
 | 🏠 **Conheça o abrigo** | Missão, outras formas de ajudar e link pro Instagram |
 | 🛡️ **Painel do abrigo** | Aprovar, ocultar e remover pets, com "Desfazer" — cards no celular, tabela no desktop |
 | 🎨 **Capricho visual** | Estilo "desenhado à mão", botões com mola, entradas em cascata, confete no final — e respeita quem pede menos movimento |
@@ -182,6 +183,7 @@ Além das visitas por tela, o app manda estes eventos:
 | `/obrigado` | Aguardando aprovação 🎉 |
 | `/reels` | Feed de pets aprovados (`?pet=<id>` abre direto num pet) |
 | `/compartilhar/:id` | Compartilhar o pet nos Stories |
+| `/video` | Vídeo animado de agradecimento (`?pets=<ids>&mensagem=<texto>` já vem do painel) |
 | `/abrigo` | Conheça o abrigo |
 | `/admin/login` → `/admin` | Painel de aprovação |
 
@@ -211,10 +213,15 @@ src/
 ├── lib/image.ts          # reduz a foto antes do upload
 ├── lib/age.ts            # idade "anos.meses" (0.6 = 6 meses) — usado também pelo server
 ├── lib/pix.ts            # geração do PIX (BR Code + QR)
+├── lib/draw.ts           # paleta e peças de desenho no canvas (patinhas, caixas, textos)
+├── lib/story.ts          # imagens 1080×1920 dos Stories (3 modelos + montagem da turma)
+├── lib/video.ts          # animação do vídeo de agradecimento (cena + quadro a quadro)
+├── lib/encode.ts         # canvas → MP4 (WebCodecs + mp4-muxer; MediaRecorder de reserva)
 ├── state/AppState.tsx    # estado global (feed, pet recém-cadastrado, sessão do painel)
 └── screens/
     ├── HowItWorks.tsx  AddPet.tsx  Donation.tsx  SendReceipt.tsx  Thanks.tsx
     ├── Reels.tsx  SharePreview.tsx  Shelter.tsx
+    ├── GroupThanks.tsx  ThanksVideo.tsx
     └── admin/  AdminLogin.tsx  AdminDashboard.tsx
 ```
 

@@ -1,6 +1,33 @@
 import QRCode from 'qrcode'
 import { SHELTER, type Pet } from '../data/mock'
 import { formatAge } from './age'
+import {
+  BLUE,
+  BODY,
+  CREAM,
+  type Ctx,
+  HAND,
+  INK,
+  INK_SOFT,
+  ORANGE,
+  WHITE,
+  YELLOW,
+  drawCover,
+  drawPaw,
+  fitFont,
+  heart,
+  loadFonts,
+  loadImage,
+  pawPattern,
+  sketchBox,
+  sparkle,
+  star,
+  textLines,
+  withLetterSpacing,
+  withRotation,
+  withRotationAsync,
+  wrapText,
+} from './draw'
 import { PETS_PER_THANKS_STORY, thanksMessage } from './thanks'
 
 /**
@@ -20,25 +47,12 @@ export const STORY_TEMPLATES: { id: StoryTemplate; label: string }[] = [
 const W = 1080
 const H = 1920
 
-const INK = '#1a2b4a'
-const INK_SOFT = '#4a6080'
-const CREAM = '#fff9f0'
-const YELLOW = '#fec601'
-const ORANGE = '#ea7317'
-const BLUE = '#2364aa'
-const WHITE = '#ffffff'
-
-const HAND = '"Just Me Again Down Here"'
-const BODY = '"Balsamiq Sans"'
-
 /** A mensagem do story: "{Nome}! Está pedindo para você ajudar o abrigo". */
 const ASK = 'Está pedindo para você ajudar o abrigo'
 /** Selo do topo de todos os modelos. */
 const BADGE = 'Doe para o abrigo'
 /** Deixa claro pra qual abrigo vai a doação. */
 const SHELTER_PLACE = `${SHELTER.name} · Ivaiporã - PR`
-
-type Ctx = CanvasRenderingContext2D
 
 export async function renderStory(pet: Pet, template: StoryTemplate, url: string): Promise<Blob> {
   await loadFonts()
@@ -73,7 +87,7 @@ export async function renderThanksStory(pets: Pet[], message: string, url: strin
   ctx.lineCap = 'round'
   ctx.fillStyle = CREAM
   ctx.fillRect(0, 0, W, H)
-  pawPattern(ctx, 'rgba(35,100,170,0.045)')
+  pawPattern(ctx, 'rgba(35,100,170,0.045)', W, H)
 
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -158,22 +172,6 @@ export async function renderThanksStory(pets: Pet[], message: string, url: strin
   ))
 }
 
-/** Quebra inclusive palavras longas, para mensagens personalizadas nunca vazarem sobre as fotos. */
-function textLines(ctx: Ctx, text: string, maxWidth: number) {
-  const lines: string[] = []
-  let line = ''
-  for (const character of text.replace(/\s+/g, ' ')) {
-    if (ctx.measureText(line + character).width > maxWidth && line) {
-      const space = line.lastIndexOf(' ')
-      lines.push(space > 0 ? line.slice(0, space) : line)
-      line = space > 0 ? line.slice(space + 1) : ''
-    }
-    line += character
-  }
-  if (line.trim()) lines.push(line.trim())
-  return lines
-}
-
 // =====================================================================
 // 1) Foto — o pet em tela cheia, card com convite + QR embaixo
 // =====================================================================
@@ -182,7 +180,7 @@ async function drawFoto(ctx: Ctx, pet: Pet, photo: HTMLImageElement | null, url:
   ctx.fillStyle = ORANGE
   ctx.fillRect(0, 0, W, H)
   if (photo) drawCover(ctx, photo, 0, 0, W, H)
-  else pawPattern(ctx, 'rgba(255,255,255,0.18)')
+  else pawPattern(ctx, 'rgba(255,255,255,0.18)', W, H)
 
   // Sombra no topo (selo legível) e degradê forte embaixo (texto + card)
   const top = ctx.createLinearGradient(0, 0, 0, 520)
@@ -256,7 +254,7 @@ async function drawFoto(ctx: Ctx, pet: Pet, photo: HTMLImageElement | null, url:
 async function drawPolaroid(ctx: Ctx, pet: Pet, photo: HTMLImageElement | null, url: string) {
   ctx.fillStyle = CREAM
   ctx.fillRect(0, 0, W, H)
-  pawPattern(ctx, 'rgba(35,100,170,0.13)')
+  pawPattern(ctx, 'rgba(35,100,170,0.13)', W, H)
 
   shelterBadge(ctx, 250, WHITE)
 
@@ -387,7 +385,7 @@ async function drawPolaroid(ctx: Ctx, pet: Pet, photo: HTMLImageElement | null, 
 async function drawCarteirinha(ctx: Ctx, pet: Pet, photo: HTMLImageElement | null, url: string) {
   ctx.fillStyle = BLUE
   ctx.fillRect(0, 0, W, H)
-  pawPattern(ctx, 'rgba(255,255,255,0.08)')
+  pawPattern(ctx, 'rgba(255,255,255,0.08)', W, H)
 
   // Título
   ctx.textAlign = 'center'
@@ -661,188 +659,12 @@ function tape(ctx: Ctx, cx: number, cy: number, deg: number) {
   })
 }
 
-function heart(ctx: Ctx, cx: number, cy: number, s: number, opts: { fill?: string; stroke?: string; lineWidth?: number; rotate?: number }) {
-  withRotation(ctx, cx, cy, opts.rotate ?? 0, () => {
-    ctx.beginPath()
-    ctx.moveTo(0, s * 0.42)
-    ctx.bezierCurveTo(-s * 0.1, s * 0.34, -s * 0.62, s * 0.05, -s * 0.56, -s * 0.2)
-    ctx.bezierCurveTo(-s * 0.5, -s * 0.52, -s * 0.1, -s * 0.56, 0, -s * 0.24)
-    ctx.bezierCurveTo(s * 0.1, -s * 0.56, s * 0.5, -s * 0.52, s * 0.56, -s * 0.2)
-    ctx.bezierCurveTo(s * 0.62, s * 0.05, s * 0.1, s * 0.34, 0, s * 0.42)
-    ctx.closePath()
-    if (opts.fill) {
-      ctx.fillStyle = opts.fill
-      ctx.fill()
-    }
-    if (opts.stroke) {
-      ctx.lineWidth = opts.lineWidth ?? 6
-      ctx.strokeStyle = opts.stroke
-      ctx.stroke()
-    }
-  })
-}
-
-function star(ctx: Ctx, cx: number, cy: number, r: number, fill: string) {
-  ctx.beginPath()
-  for (let i = 0; i < 10; i++) {
-    const a = (Math.PI / 5) * i - Math.PI / 2
-    const rr = i % 2 ? r * 0.48 : r
-    ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr)
-  }
-  ctx.closePath()
-  ctx.fillStyle = fill
-  ctx.fill()
-  ctx.lineWidth = 5
-  ctx.strokeStyle = INK
-  ctx.stroke()
-}
-
-/** Brilhinho de 4 pontas. */
-function sparkle(ctx: Ctx, cx: number, cy: number, r: number, color: string) {
-  ctx.beginPath()
-  ctx.moveTo(cx, cy - r)
-  ctx.quadraticCurveTo(cx, cy, cx + r, cy)
-  ctx.quadraticCurveTo(cx, cy, cx, cy + r)
-  ctx.quadraticCurveTo(cx, cy, cx - r, cy)
-  ctx.quadraticCurveTo(cx, cy, cx, cy - r)
-  ctx.fillStyle = color
-  ctx.fill()
-}
-
 // =====================================================================
 // Utilitários
 // =====================================================================
-
-let fontsReady: Promise<unknown> | null = null
-function loadFonts() {
-  fontsReady ??= Promise.all([
-    document.fonts.load(`150px ${HAND}`, 'Faça ÁÉÍÓÚ ãõç'),
-    document.fonts.load(`700 40px ${BODY}`, 'Faça ÁÉÍÓÚ ãõç'),
-    document.fonts.load(`400 36px ${BODY}`, 'Faça ÁÉÍÓÚ ãõç'),
-  ])
-  return fontsReady
-}
 
 /** Número "de registro" estável, tirado do id do pet. */
 function cardNumber(id: string) {
   const hex = id.match(/([0-9a-f]{4,})$/)?.[1] ?? '0'
   return String(parseInt(hex.slice(0, 6), 16) % 10000).padStart(4, '0')
-}
-
-/** Caixa no estilo do app: contorno grosso escuro + sombra "dura" deslocada. */
-function sketchBox(ctx: Ctx, x: number, y: number, w: number, h: number, r: number, fill: string, stroke: number, shadow: number) {
-  ctx.beginPath()
-  ctx.roundRect(x + shadow, y + shadow, w, h, r)
-  ctx.fillStyle = INK
-  ctx.fill()
-  ctx.beginPath()
-  ctx.roundRect(x, y, w, h, r)
-  ctx.fillStyle = fill
-  ctx.fill()
-  ctx.lineWidth = stroke
-  ctx.strokeStyle = INK
-  ctx.stroke()
-}
-
-/** Desenha a imagem preenchendo o retângulo sem distorcer ("cover"), com cantos arredondados. */
-function drawCover(ctx: Ctx, img: HTMLImageElement, x: number, y: number, w: number, h: number, r = 0) {
-  const scale = Math.max(w / img.width, h / img.height)
-  const dw = img.width * scale
-  const dh = img.height * scale
-  ctx.save()
-  ctx.beginPath()
-  ctx.roundRect(x, y, w, h, r)
-  ctx.clip()
-  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh)
-  ctx.restore()
-}
-
-/** Patinha clássica numa caixa 24×24: almofada + 4 dedos ([x, y, raioX, raioY, rotação]). */
-const PAW_PARTS: [number, number, number, number, number][] = [
-  [12, 16, 5.6, 4.6, 0],
-  [4.6, 9.6, 2.3, 2.9, -0.45],
-  [9.2, 5.4, 2.5, 3.1, -0.15],
-  [14.8, 5.4, 2.5, 3.1, 0.15],
-  [19.4, 9.6, 2.3, 2.9, 0.45],
-]
-
-function drawPaw(ctx: Ctx, x: number, y: number, size: number, color: string) {
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.scale(size / 24, size / 24)
-  ctx.fillStyle = color
-  for (const [cx, cy, rx, ry, rot] of PAW_PARTS) {
-    ctx.beginPath()
-    ctx.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2)
-    ctx.fill()
-  }
-  ctx.restore()
-}
-
-function pawPattern(ctx: Ctx, color: string) {
-  for (let row = 0; row < 11; row++) {
-    for (let col = 0; col < 6; col++) {
-      withRotation(ctx, col * 200 + (row % 2) * 100 + 40, row * 190 + 60, row % 2 ? 18 : -18, () =>
-        drawPaw(ctx, -34, -34, 68, color),
-      )
-    }
-  }
-}
-
-function withRotation(ctx: Ctx, cx: number, cy: number, deg: number, draw: () => void) {
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.rotate((deg * Math.PI) / 180)
-  draw()
-  ctx.restore()
-}
-
-async function withRotationAsync(ctx: Ctx, cx: number, cy: number, deg: number, draw: () => Promise<void>) {
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.rotate((deg * Math.PI) / 180)
-  await draw()
-  ctx.restore()
-}
-
-function withLetterSpacing(ctx: Ctx, spacing: string, draw: () => void) {
-  const prev = ctx.letterSpacing
-  ctx.letterSpacing = spacing
-  draw()
-  ctx.letterSpacing = prev
-}
-
-/** Maior tamanho de fonte (entre max e min) em que o texto cabe na largura. */
-function fitFont(ctx: Ctx, text: string, family: string, weight: string, max: number, min: number, maxW: number) {
-  let size = max
-  ctx.font = `${weight} ${size}px ${family}`.trim()
-  while (ctx.measureText(text).width > maxW && size > min) {
-    size -= 4
-    ctx.font = `${weight} ${size}px ${family}`.trim()
-  }
-  return size
-}
-
-function wrapText(ctx: Ctx, text: string, x: number, y: number, maxW: number, lineH: number) {
-  let line = ''
-  for (const word of text.split(' ')) {
-    const test = line ? `${line} ${word}` : word
-    if (ctx.measureText(test).width > maxW && line) {
-      ctx.fillText(line, x, y)
-      line = word
-      y += lineH
-    } else {
-      line = test
-    }
-  }
-  if (line) ctx.fillText(line, x, y)
-}
-
-function loadImage(src: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = src
-  })
 }

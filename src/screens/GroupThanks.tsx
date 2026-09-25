@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, ChevronLeft, ChevronRight, Heart, PawPrint, X } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Clapperboard, Heart, PawPrint, X } from 'lucide-react'
 import { InstagramIcon } from '../components/ui'
 import { StoryShareActions, type ShareableStory } from '../components/StoryShareActions'
 import { SHELTER, type Pet } from '../data/mock'
@@ -71,7 +71,10 @@ export default function GroupThanks({ ids, message }: { ids: string; message: st
               <button className="btn btn--blue" onClick={() => setSharing(true)}>
                 <InstagramIcon size={22} /> Compartilhar no Instagram
               </button>
-              <span>Uma lembrança dessa turma para os seus stories.</span>
+              <Link className="btn btn--white" to={`/video?pets=${encodeURIComponent(pets.map((pet) => pet.id).join(','))}&mensagem=${encodeURIComponent(message)}`}>
+                <Clapperboard size={21} strokeWidth={2.5} /> Fazer vídeo dessa turma
+              </Link>
+              <span>Uma imagem para os stories ou um vídeo animado para o post.</span>
             </section>
           )}
           {pets.length > 0 && pets.length < petIds.length && <p className="muted">Alguns pets não estão mais disponíveis e ficaram fora desta seleção.</p>}

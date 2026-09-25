@@ -55,7 +55,13 @@ export function trackPageView(path: string) {
 }
 
 /** Eventos do fluxo (aparecem em Relatórios → Engajamento → Eventos). */
-export type AnalyticsEvent = 'pet_cadastrado' | 'pix_copiado' | 'comprovante_whatsapp' | 'story_compartilhado'
+export type AnalyticsEvent =
+  | 'pet_cadastrado'
+  | 'pix_copiado'
+  | 'comprovante_whatsapp'
+  | 'story_compartilhado'
+  | 'video_gerado'
+  | 'video_compartilhado'
 
 export function track(event: AnalyticsEvent, params?: Record<string, string | number>) {
   if (!ENABLED || isAdminPath(window.location.pathname)) return

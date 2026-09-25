@@ -46,6 +46,8 @@ const SECURITY_HEADERS: Record<string, string> = {
     "style-src 'self' https://fonts.googleapis.com",
     'font-src https://fonts.gstatic.com',
     "img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com",
+    // O vídeo de agradecimento é gerado no navegador e tocado direto do blob:
+    "media-src 'self' blob:",
     "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
     "object-src 'none'",
     "base-uri 'self'",

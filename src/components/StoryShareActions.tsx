@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Download, ExternalLink, Info } from 'lucide-react'
 import { InstagramIcon, haptic } from './ui'
-import { track } from '../lib/analytics'
+import { track, type AnalyticsEvent } from '../lib/analytics'
 import { ANDROID, IN_APP, openInBrowser } from '../lib/inApp'
 
 export interface ShareableStory {
@@ -9,11 +9,22 @@ export interface ShareableStory {
   preview: string
 }
 
-/** Compartilhamento comum às imagens de um pet e às montagens de agradecimento. */
-export function StoryShareActions({ story, caption, label = 'Compartilhar story' }: {
+/** Compartilhamento comum às imagens de um pet, às montagens de agradecimento e ao vídeo. */
+export function StoryShareActions({
+  story,
+  caption,
+  label = 'Compartilhar story',
+  mediaNoun = 'a imagem',
+  downloadLabel = 'Baixar imagem',
+  event = 'story_compartilhado',
+}: {
   story: ShareableStory | null
   caption: string
   label?: string
+  /** Como o arquivo é chamado nos avisos ("a imagem", "o vídeo"). */
+  mediaNoun?: string
+  downloadLabel?: string
+  event?: AnalyticsEvent
 }) {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
@@ -35,7 +46,7 @@ export function StoryShareActions({ story, caption, label = 'Compartilhar story'
       if (navigator.canShare?.(data)) {
         if (ANDROID) navigator.clipboard?.writeText(caption).catch(() => {})
         await navigator.share(data)
-        track('story_compartilhado')
+        track(event)
         if (ANDROID) setNotice('Legenda copiada! É só colar no post')
         return
       }
@@ -54,7 +65,7 @@ export function StoryShareActions({ story, caption, label = 'Compartilhar story'
           <p className="support-note" role="note">
             <Info size={16} strokeWidth={2.5} aria-hidden="true" />
             <span>
-              Você está no <strong>navegador do Instagram</strong>, que não deixa salvar nem compartilhar a imagem.{' '}
+              Você está no <strong>navegador do Instagram</strong>, que não deixa salvar nem compartilhar {mediaNoun}.{' '}
               {ANDROID ? 'Abra no seu navegador pra postar o story.' : (
                 <>Toque em <strong>•••</strong> no canto da tela e escolha <strong>Abrir no navegador externo</strong>.</>
               )}
@@ -73,11 +84,11 @@ export function StoryShareActions({ story, caption, label = 'Compartilhar story'
           </button>
           <a ref={downloadRef} className="btn btn--white" href={story?.preview} download={story?.file.name}
             aria-disabled={!story} tabIndex={story ? 0 : -1}
-            onClick={(event) => {
-              if (!story) { event.preventDefault(); return }
-              setNotice('Download iniciado! Agora é só postar a imagem no seu story')
+            onClick={(clickEvent) => {
+              if (!story) { clickEvent.preventDefault(); return }
+              setNotice(`Download iniciado! Agora é só postar ${mediaNoun} no Instagram`)
             }}>
-            <Download size={20} strokeWidth={2.5} /> Baixar imagem
+            <Download size={20} strokeWidth={2.5} /> {downloadLabel}
           </a>
         </>
       )}

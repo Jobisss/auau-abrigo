@@ -12,6 +12,7 @@ import Thanks from './screens/Thanks'
 import Shelter from './screens/Shelter'
 import Reels from './screens/Reels'
 import SharePreview from './screens/SharePreview'
+import ThanksVideo from './screens/ThanksVideo'
 import AdminLogin from './screens/admin/AdminLogin'
 import AdminDashboard from './screens/admin/AdminDashboard'
 
@@ -28,6 +29,7 @@ if (IN_APP && ANDROID && !location.pathname.startsWith('/admin')) openInBrowser(
  *   /obrigado           Aguardando aprovação
  *   /reels              Feed de pets aprovados
  *   /compartilhar/:id   Compartilhar o pet nos Stories
+ *   /video              Vídeo de agradecimento pros pets que já ajudaram
  *   /abrigo             Conheça o abrigo
  * Painel do abrigo:
  *   /admin/login → /admin
@@ -48,6 +50,7 @@ export default function App() {
           <Route path="/abrigo" element={<Shelter />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/compartilhar/:petId" element={<SharePreview />} />
+          <Route path="/video" element={<ThanksVideo />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
