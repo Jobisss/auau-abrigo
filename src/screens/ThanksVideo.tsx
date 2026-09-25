@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Check, Clapperboard, PawPrint, RotateCcw, Square, Wand2 } from 'lucide-react'
+import { Check, Clapperboard, PawPrint, RotateCcw, Square, Volume2, VolumeX, Wand2 } from 'lucide-react'
 import { ScreenHeader, haptic } from '../components/ui'
 import { StoryShareActions, type ShareableStory } from '../components/StoryShareActions'
 import { SHELTER, type Pet } from '../data/mock'
 import { track } from '../lib/analytics'
 import { ApiError, api } from '../lib/api'
+import { createCuePlayer, hasSound, loadSounds, renderSceneAudio, type CuePlayer } from '../lib/audio'
 import { encodeVideo, type EncodeMode } from '../lib/encode'
 import { DEFAULT_THANKS_MESSAGE, thanksMessage } from '../lib/thanks'
 import { PETS_PER_VIDEO, VIDEO_FORMATS, createThanksScene, type ThanksScene, type VideoFormat } from '../lib/video'
@@ -18,6 +19,7 @@ interface Result {
   story: ShareableStory
   ext: 'mp4' | 'webm'
   mode: EncodeMode
+  hasAudio: boolean
 }
 
 /**
@@ -190,6 +192,9 @@ function VideoStudio({ pets, message, format }: { pets: Pet[]; message: string; 
   const busy = progress > 0
   const abortRef = useRef<AbortController | null>(null)
   const [playKey, setPlayKey] = useState(0)
+  const [audio, setAudio] = useState<AudioBuffer | null>(null)
+  const [muted, setMuted] = useState(false)
+  const playerRef = useRef<CuePlayer | null>(null)
 
   const petKey = pets.map((pet) => `${pet.id}:${pet.photo}`).join(',')
   const url = `${location.origin}/`
@@ -228,6 +233,24 @@ function VideoStudio({ pets, message, format }: { pets: Pet[]; message: string; 
     }
   }, [petKey, message, format, url])
 
+  // Mixa a trilha nos instantes da cena. Sem arquivos em public/sons/ o vídeo sai mudo.
+  useEffect(() => {
+    if (!scene) {
+      setAudio(null)
+      return
+    }
+    let alive = true
+    loadSounds()
+      .then((sounds) => (hasSound(sounds) ? renderSceneAudio(sounds, scene.cues, scene.duration) : null))
+      .then((buffer) => alive && setAudio(buffer))
+      .catch(() => alive && setAudio(null))
+    return () => {
+      alive = false
+    }
+  }, [scene])
+
+  useEffect(() => () => playerRef.current?.close(), [])
+
   // Trocar qualquer coisa invalida o arquivo já gerado.
   const resultRef = useRef<Result | null>(null)
   resultRef.current = result
@@ -257,16 +280,29 @@ function VideoStudio({ pets, message, format }: { pets: Pet[]; message: string; 
     ctx.lineCap = 'round'
     const start = performance.now()
     let raf = 0
+    let lastT = Infinity
+    const sing = () => {
+      if (!audio || muted) return
+      playerRef.current ??= createCuePlayer()
+      playerRef.current.play(audio)
+    }
+    sing()
     const tick = (now: number) => {
       // Um respiro de meio segundo entre um laço e outro.
       const t = ((now - start) / 1000) % (scene.duration + 0.5)
+      // Voltou pro começo: a trilha recomeça junto.
+      if (t < lastT) sing()
+      lastT = t
       ctx.setTransform(PREVIEW_SCALE, 0, 0, PREVIEW_SCALE, 0, 0)
       scene.drawFrame(ctx, Math.min(t, scene.duration))
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [scene, playKey, busy])
+    return () => {
+      cancelAnimationFrame(raf)
+      playerRef.current?.stop()
+    }
+  }, [scene, playKey, busy, audio, muted])
 
   async function generate() {
     if (!scene || busy) return
@@ -282,12 +318,18 @@ function VideoStudio({ pets, message, format }: { pets: Pet[]; message: string; 
         fps: scene.fps,
         duration: scene.duration,
         draw: scene.drawFrame,
+        audio,
         onProgress: setProgress,
         signal: controller.signal,
       })
       const file = new File([video.blob], `pets-que-ajudaram.${video.ext}`, { type: video.blob.type })
-      setResult({ story: { file, preview: URL.createObjectURL(video.blob) }, ext: video.ext, mode: video.mode })
-      track('video_gerado', { pets: pets.length, formato: format })
+      setResult({
+        story: { file, preview: URL.createObjectURL(video.blob) },
+        ext: video.ext,
+        mode: video.mode,
+        hasAudio: video.hasAudio,
+      })
+      track('video_gerado', { pets: pets.length, formato: format, som: video.hasAudio ? 'sim' : 'nao' })
     } catch (e) {
       if ((e as Error).name !== 'AbortError') setError((e as Error).message || 'Não deu pra gerar o vídeo')
     } finally {
@@ -313,9 +355,17 @@ function VideoStudio({ pets, message, format }: { pets: Pet[]; message: string; 
       <div className="video-section-head">
         <span className="label">4. Prévia</span>
         {status === 'pronto' && (
-          <button className="pill pill--sm" onClick={() => setPlayKey((key) => key + 1)}>
-            <RotateCcw size={14} strokeWidth={2.5} /> Do começo
-          </button>
+          <span className="row" style={{ '--gap': '6px' } as CSSProperties}>
+            {audio && (
+              <button className="pill pill--sm" aria-pressed={muted} onClick={() => setMuted((value) => !value)}>
+                {muted ? <VolumeX size={14} strokeWidth={2.5} /> : <Volume2 size={14} strokeWidth={2.5} />}
+                {muted ? 'Mudo' : 'Som'}
+              </button>
+            )}
+            <button className="pill pill--sm" onClick={() => setPlayKey((key) => key + 1)}>
+              <RotateCcw size={14} strokeWidth={2.5} /> Do começo
+            </button>
+          </span>
         )}
       </div>
 
@@ -332,7 +382,8 @@ function VideoStudio({ pets, message, format }: { pets: Pet[]; message: string; 
 
       {status === 'pronto' && (
         <p className="hint-text video-duration">
-          {pets.length} {pets.length === 1 ? 'pet' : 'pets'} · {seconds}s · sem som (dá pra colocar música no Instagram)
+          {pets.length} {pets.length === 1 ? 'pet' : 'pets'} · {seconds}s ·{' '}
+          {audio ? 'com os sons do abrigo' : 'sem som (dá pra colocar música no Instagram)'}
         </p>
       )}
 
@@ -368,6 +419,11 @@ function VideoStudio({ pets, message, format }: { pets: Pet[]; message: string; 
           <p className="video-ready">
             <Check size={16} strokeWidth={3} /> Vídeo pronto em {result.ext.toUpperCase()}
           </p>
+          {audio && !result.hasAudio && (
+            <p className="hint-text" role="note">
+              Este navegador não conseguiu gravar o som — o vídeo saiu mudo. Pelo Chrome o som entra.
+            </p>
+          )}
           {result.ext === 'webm' && (
             <p className="hint-text" role="note">
               Este navegador só gera WebM, que o Instagram não aceita. Abra esta tela no Chrome pra sair em MP4.

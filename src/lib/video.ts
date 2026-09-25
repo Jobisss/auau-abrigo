@@ -25,6 +25,7 @@ import {
   star,
   textLines,
   withLetterSpacing,
+  withRotation,
 } from './draw'
 import { thanksMessage } from './thanks'
 
@@ -56,12 +57,21 @@ const APPEAR = 0.8
 /** Quanto o convite final fica na tela. */
 const OUTRO = 3.4
 
+/** Momentos (em segundos) em que os sons tocam — ver `audio.ts`. */
+export interface SceneCues {
+  /** Um por pet, no instante exato em que o card assenta na tela. */
+  pet: number[]
+  /** Comemoração: o último pet chegou e começa a chuva de corações. */
+  festa: number
+}
+
 export interface ThanksScene {
   width: number
   height: number
   fps: number
   /** Duração total, em segundos. */
   duration: number
+  cues: SceneCues
   /** Desenha o quadro do instante `t` (segundos). Só chame depois da cena montada. */
   drawFrame: (ctx: Ctx, t: number) => void
 }
@@ -89,15 +99,19 @@ export async function createThanksScene({ pets, message, url, format }: SceneOpt
   const background = buildBackground(W, H)
 
   const stagger = pets.length <= 6 ? 0.68 : pets.length <= 12 ? 0.46 : 0.3
-  // Instante em que cada card termina de assentar — é quando o contador sobe.
+  // Instante em que cada card termina de assentar — é quando o contador sobe e o som toca.
   const landings = pets.map((_, index) => INTRO + index * stagger + APPEAR * 0.55)
-  const footerAt = INTRO + (pets.length - 1) * stagger + APPEAR + 0.3
+  // A turma toda na tela: comemoração com chuva de corações antes do convite entrar.
+  const celebrateAt = landings[landings.length - 1]
+  const footerAt = celebrateAt + 1.2
   const duration = Math.round((footerAt + OUTRO) * 10) / 10
+  const cues: SceneCues = { pet: landings, festa: celebrateAt }
 
   const heading = thanksMessage(message)
   const title = fitTitle(heading, stage.titleW, stage.titleH)
   const hearts = floatingHearts(W, H)
   const bursts = pets.map((_, index) => burstSeeds(index))
+  const rain = heartRain(W)
   const host = new URL(url).host
 
   function drawFrame(ctx: Ctx, t: number) {
@@ -143,10 +157,13 @@ export async function createThanksScene({ pets, message, url, format }: SceneOpt
     })
     ctx.restore()
 
-    drawFooter(ctx, t - footerAt, stage, qr, host, W, H)
+    const qrArea = drawFooter(ctx, t - footerAt, stage, qr, host, W, H)
+    // A chuva cai por cima de tudo, inclusive do convite — só o QR fica livre, senão
+    // um coração no lugar errado estraga a leitura pela câmera.
+    drawHeartRain(ctx, rain, t - celebrateAt, W, H, qrArea)
   }
 
-  return { width: W, height: H, fps: VIDEO_FPS, duration, drawFrame }
+  return { width: W, height: H, fps: VIDEO_FPS, duration, cues, drawFrame }
 }
 
 // =====================================================================
@@ -194,7 +211,9 @@ function layout(W: number, H: number, format: VideoFormat, count: number): Stage
   // O convite entra por cima das fotos no fim do vídeo: assim os pets ficam com a tela toda.
   const footerY = H - (reels ? 250 : 88) - footerH
   const areaTop = counterY + 44
-  const areaBottom = H - (reels ? 250 : 88)
+  // A turma fica menor e mais pro meio da tela: sobra respiro antes do convite e a
+  // chuva de corações da comemoração tem espaço pra aparecer.
+  const areaBottom = H - (reels ? 400 : 150)
   const areaW = W - margin * 2
   const areaH = areaBottom - areaTop
 
@@ -415,8 +434,8 @@ function drawHeader(ctx: Ctx, t: number, stage: Stage, title: Title, landings: n
 }
 
 /** Convite final: card creme com o QR, o endereço do site e o @ do abrigo. */
-function drawFooter(ctx: Ctx, t: number, stage: Stage, qr: HTMLCanvasElement, host: string, W: number, H: number) {
-  if (t <= 0) return
+function drawFooter(ctx: Ctx, t: number, stage: Stage, qr: HTMLCanvasElement, host: string, W: number, H: number): Rect | null {
+  if (t <= 0) return null
   const progress = settle(clamp01(t / 0.9))
   const x = 56
   const w = W - x * 2
@@ -487,6 +506,15 @@ function drawFooter(ctx: Ctx, t: number, stage: Stage, qr: HTMLCanvasElement, ho
   ctx.textAlign = 'left'
   ctx.fillText(handle, (W - handleW) / 2 + icon + 12, handleY + 2)
   ctx.restore()
+
+  return { x: qrX - 18, y: qrY - 18, w: qrSize + 36, h: qrSize + 36 }
+}
+
+interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
 }
 
 interface FloatingHeart {
@@ -509,6 +537,67 @@ function floatingHearts(W: number, H: number): FloatingHeart[] {
     color: colors[Math.floor(random() * colors.length)],
     sway: 18 + random() * 40,
   }))
+}
+
+interface RainPiece {
+  x: number
+  /** Quando esse coração começa a cair, contando da comemoração. */
+  delay: number
+  /** Segundos pra atravessar a tela. */
+  fall: number
+  size: number
+  /** Giro em graus por segundo. */
+  spin: number
+  sway: number
+  color: string
+  kind: number
+  phase: number
+}
+
+/** Chuva de confete em forma de coração pra quando a turma toda estiver na tela. */
+function heartRain(W: number): RainPiece[] {
+  const random = seeded(99)
+  const colors = [ORANGE, YELLOW, BLUE, TEAL, ORANGE, YELLOW]
+  return Array.from({ length: 56 }, (_, index) => ({
+    x: random() * W,
+    // Um punhado cai de cara, no susto da festa; o resto vem pingando até o fim.
+    delay: index < 18 ? random() * 0.4 : 0.3 + random() * 2.6,
+    fall: 1.7 + random() * 1.6,
+    size: 30 + random() * 54,
+    spin: (random() - 0.5) * 260,
+    sway: 20 + random() * 60,
+    color: colors[Math.floor(random() * colors.length)],
+    kind: index % 7 === 0 ? 1 : index % 11 === 0 ? 2 : 0,
+    phase: random() * Math.PI * 2,
+  }))
+}
+
+function drawHeartRain(ctx: Ctx, pieces: RainPiece[], t: number, W: number, H: number, keepClear: Rect | null) {
+  if (t <= 0) return
+  ctx.save()
+  if (keepClear) {
+    // Recorta a tela inteira menos o quadrado do QR (regra par-ímpar).
+    ctx.beginPath()
+    ctx.rect(0, 0, W, H)
+    ctx.rect(keepClear.x, keepClear.y, keepClear.w, keepClear.h)
+    ctx.clip('evenodd')
+  }
+  for (const piece of pieces) {
+    const local = t - piece.delay
+    if (local <= 0) continue
+    const progress = local / piece.fall
+    if (progress > 1.12) continue
+    const y = -piece.size + progress * (H + piece.size * 2)
+    const x = (((piece.x + Math.sin(local * 1.7 + piece.phase) * piece.sway) % W) + W) % W
+    ctx.save()
+    ctx.globalAlpha = Math.min(1, local * 6) * (progress > 1 ? 1 - (progress - 1) / 0.12 : 1)
+    if (piece.kind === 1) withRotation(ctx, x, y, local * piece.spin, () => star(ctx, 0, 0, piece.size * 0.46, piece.color))
+    else if (piece.kind === 2)
+      withRotation(ctx, x, y, local * piece.spin, () => drawPaw(ctx, -piece.size / 2, -piece.size / 2, piece.size, piece.color))
+    else heart(ctx, x, y, piece.size, { fill: piece.color, rotate: local * piece.spin })
+    ctx.restore()
+  }
+  ctx.restore()
 }
 
 /** Coraçõezinhos subindo no fundo, atrás dos cards. */

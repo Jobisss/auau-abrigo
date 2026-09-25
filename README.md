@@ -44,7 +44,7 @@ flowchart LR
 | 💸 **Doação via PIX** | R$ 5, 10, 25 ou outro valor — QR Code e copia-e-cola gerados na hora com `pix-utils` |
 | 💬 **Comprovante no WhatsApp** | Mensagem já preenchida com o valor e o nome do pet |
 | 📲 **Compartilhar** | Folha de compartilhamento nativa do celular (Stories, WhatsApp…) com a foto do pet |
-| 🎥 **Vídeo de agradecimento** | Escolhe os pets, vê a animação rodando e exporta um MP4 (9:16 ou 4:5) pronto pro post no Instagram |
+| 🎥 **Vídeo de agradecimento** | Escolhe os pets, vê a animação rodando e exporta um MP4 (9:16 ou 4:5) pronto pro post no Instagram — com som a cada pet e chuva de corações na comemoração |
 | 🏠 **Conheça o abrigo** | Missão, outras formas de ajudar e link pro Instagram |
 | 🛡️ **Painel do abrigo** | Aprovar, ocultar e remover pets, com "Desfazer" — cards no celular, tabela no desktop |
 | 🎨 **Capricho visual** | Estilo "desenhado à mão", botões com mola, entradas em cascata, confete no final — e respeita quem pede menos movimento |
@@ -195,6 +195,8 @@ deploy/
 ├── deploy.sh             # pull + build + pm2 restart
 └── backup.sh             # backup diário de data/ (cron)
 ecosystem.config.cjs      # PM2 na VPS
+public/
+└── sons/                 # sons do vídeo (opcionais) — ver public/sons/LEIA-ME.md
 server/
 ├── index.ts              # rotas (Elysia) + fotos + front em produção
 ├── db.ts                 # SQLite: schema, formato público/admin, pets de exemplo
@@ -216,7 +218,8 @@ src/
 ├── lib/draw.ts           # paleta e peças de desenho no canvas (patinhas, caixas, textos)
 ├── lib/story.ts          # imagens 1080×1920 dos Stories (3 modelos + montagem da turma)
 ├── lib/video.ts          # animação do vídeo de agradecimento (cena + quadro a quadro)
-├── lib/encode.ts         # canvas → MP4 (WebCodecs + mp4-muxer; MediaRecorder de reserva)
+├── lib/encode.ts         # canvas → MP4 com áudio (WebCodecs + mp4-muxer; MediaRecorder de reserva)
+├── lib/audio.ts          # mixa os sons de public/sons/ nos instantes da animação
 ├── state/AppState.tsx    # estado global (feed, pet recém-cadastrado, sessão do painel)
 └── screens/
     ├── HowItWorks.tsx  AddPet.tsx  Donation.tsx  SendReceipt.tsx  Thanks.tsx
